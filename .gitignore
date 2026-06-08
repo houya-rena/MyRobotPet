@@ -1,0 +1,22 @@
+# Macが自動生成する不要なシステムファイル
+.DS_Store
+Thumblocal.db
+
+# エディタの個人設定（チームや環境が変わると不要になるもの）
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+*.sublime-project
+
+# 依存パッケージ（Node.jsなどを使う場合、重いのでGitHubには上げない）
+node_modules/
+jspm_packages/
+
+# ログファイルやキャッシュ
+*.log
+.npm
+.eslintcache
+
+# 環境変数・機密情報（パスワードやAPIキーなど）
+.env
+.env.local
