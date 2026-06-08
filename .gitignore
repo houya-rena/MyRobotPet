@@ -33,3 +33,8 @@ jspm_packages/
 
 # VS Codeの設定フォルダ
 .vscode/
+
+Code解説_memo/
+idea/
+
+arduino_secrets.h
