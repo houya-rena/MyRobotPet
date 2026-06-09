@@ -1,0 +1,23 @@
+# PlatformIO
+.pio/
+.clang_d/
+.vscode/
+.env
+
+# Build files
+build/
+*build*
+*.o
+*.elf
+*.bin
+*.hex
+*.map
+*.d
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Other
+.cache/
+.history/
