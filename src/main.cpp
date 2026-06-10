@@ -20,16 +20,19 @@
  */
 
 // ⚠️ PlatformIO では必須（.ino では自動挿入されていた）
-#include <Arduino.h>
 
+#include <Arduino.h>
+#include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+
+// --- FreeRTOS 関連の修正 ---
 #include <Arduino_FreeRTOS.h>
-#include <queue.h>
+// -------------------------
+
 #include <WiFiS3.h>
 #include <RTC.h>
-
 // include/ フォルダのヘッダ
 #include "eye_animation.h"
 #include "clock_display.h"

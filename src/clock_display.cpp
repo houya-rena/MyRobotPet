@@ -16,19 +16,24 @@
  *   RTC.h : UNO R4ボードパッケージ標準内蔵
  */
 
-
+// static = 外部への遮断（=private化）
+// このファイル以外からは "WEEKDAYS" という名前は勝手に使わせない！
+// 曜日表示用の配列(0:Sun , 1:Mon ... 6:Sat に対応)
 static const char* WEEKDAYS[] = {
     "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
 };
 
+// staticなのでこのファイル以外からは "printTwoDigit" という関数を勝手に呼ばせない！
 // ゼロ埋め2桁表示ヘルパー
+// 1桁の数字を01, 02のように2桁にするための関数
 static void printTwoDigit(Adafruit_SSD1306 &dsp, int val) {
-    if (val < 10) dsp.print('0');
-    dsp.print(val);
+    if (val < 10) dsp.print('0'); // 10未満なら'0'を先頭につける
+    dsp.print(val);               // Sirial.print()とほぼ同じ
+                                  // 数値を表示する     
 }
 
 void clockDraw(Adafruit_SSD1306 &display) {
-    RTCTime now;
+    RTCTime now;        // 現在時刻を保持するための変数構造体を作成
     RTC.getTime(now);
 
     display.clearDisplay();
