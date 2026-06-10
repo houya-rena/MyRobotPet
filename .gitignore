@@ -22,3 +22,8 @@ Thumbs.db
 .cache/
 .history/
 idea/
+old_backups/
+memo/
+
+## wifiのID等
+arduino_secrets.h

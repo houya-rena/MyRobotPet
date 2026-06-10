@@ -1,3 +1,9 @@
+#include "ntp_sync.h"
+#include <Arduino.h>
+#include <WiFiS3.h>
+#include <WiFiUdp.h>
+#include <RTC.h>
+
 /**
  * ntp_sync.cpp
  * NTPサーバーからUNO R4内蔵RTCへの時刻同期
@@ -15,11 +21,6 @@
  *   レスポンスの40〜43バイト目（Transmit Timestamp 秒部）を取得。
  */
 
-#include "ntp_sync.h"
-#include <Arduino.h>
-#include <WiFiS3.h>
-#include <WiFiUdp.h>
-#include <RTC.h>
 
 // ── 設定 ──────────────────────────────────────────
 static const char NTP_SERVER[]  = "ntp.nict.jp";  // 日本標準時(NICT)

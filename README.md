@@ -42,16 +42,23 @@
 | **開発環境** | VSCode + PlatformIO |
 | **管理** | Git / GitHub /Sourcetree|
 
-## 📂 フォルダ構成
+## プロジェクト構成
+
+本プロジェクトは、機能ごとにファイルを分割し、ビルドの依存関係を明確にする構成を採用しています。
 
 ```text
 my-robot-pet/
-├── platformio.ini        # ボード設定・依存ライブラリ管理
+├── platformio.ini        # ボード設定・依存ライブラリ管理（一元管理）
 ├── src/
-│   ├── main.cpp          # 各タスクの起動・FreeRTOSスケジューラ制御
-│   ├── display.cpp       # 幾何学描画ロジック・感情表現補間
-│   └── network.cpp       # WiFi通信・天気API解析ロジック
-└── include/              # 各種ヘッダー定義
+│   ├── main.cpp          # メイン処理・FreeRTOS各タスクの初期化と管理
+│   ├── eye_animation.cpp # 表情・まばたき等の描画ロジック本体
+│   ├── clock_display.cpp # 時刻表示およびUI描画制御
+│   └── ntp_sync.cpp      # Wi-Fi接続・NTP同期・天気API通信ロジック
+└── include/              # 各モジュールのヘッダーファイル（インターフェース定義）
+    ├── eye_animation.h
+    ├── clock_display.h
+    ├── ntp_sync.h
+    └── arduino_secrets.h # ⚠️ Wi-Fi/APIキー情報（.gitignoreに含めること）
 
 ```
 

@@ -1,3 +1,6 @@
+#include "clock_display.h"
+#include <Arduino.h>
+
 /**
  * clock_display.cpp
  * ボタン押下時に表示する時刻画面
@@ -13,8 +16,6 @@
  *   RTC.h : UNO R4ボードパッケージ標準内蔵
  */
 
-#include "clock_display.h"
-#include <Arduino.h>
 
 static const char* WEEKDAYS[] = {
     "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"

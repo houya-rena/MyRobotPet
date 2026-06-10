@@ -1,3 +1,7 @@
+#include "eye_animation.h"
+#include <Arduino.h>
+#include <math.h>
+
 /**
  * eye_animation.cpp
  * 目の描画・まばたき・視線移動・感情モーフィング
@@ -9,9 +13,6 @@
  *   - eyeUpdate()をTaskDisplayから33ms周期で呼ぶだけでOK。
  */
 
-#include "eye_animation.h"
-#include <Arduino.h>
-#include <math.h>
 
 // ══════════════════════════════════════════════════
 // 感情パラメータ定義（ビットマップ不使用・数値のみ）
