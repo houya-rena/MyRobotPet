@@ -1,12 +1,6 @@
 /**
- * main.cpp
- * 多機能液晶ロボットガジェット メインファイル（PlatformIO版）
- *
- * 【robot_pet.ino からの変更点】
- *   1. #include <Arduino.h> を追加（PlatformIOでは必須）
- *   2. ファイル名を main.cpp に変更
- *   3. ヘッダは include/ フォルダから参照
- *   4. setup() / loop() のプロトタイプ宣言を追加
+ * robot_pet.ino
+ * 多機能液晶ロボットガジェット メインスケッチ（Arduino IDE版）
  *
  * 【タスク構成】
  *   TaskDisplay  (優先度3) : 目 or 時刻を描画
@@ -19,32 +13,27 @@
  *   ボタン       : D2 → GND（INPUT_PULLUP）
  */
 
-// ⚠️ PlatformIO では必須（.ino では自動挿入されていた）
-
-#include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-
-// --- FreeRTOS 関連の修正 ---
-#include <Arduino_FreeRTOS.h> // リアルタイム処理（並行処理）を行うOSライブラリ
-// -------------------------
-
+#include <Arduino_FreeRTOS.h>
+#include <queue.h>
 #include <WiFiS3.h>
 #include <RTC.h>
-// include/ フォルダのヘッダ
+
+// ヘッダファイル（同じフォルダに配置）
 #include "eye_animation.h"
 #include "clock_display.h"
 #include "ntp_sync.h"
 #include "arduino_secrets.h"
 
-// ── ハードウェア設定（動作設定） ───────────────────────────────
+// ── ハードウェア設定 ───────────────────────────────
 #define OLED_RESET    -1
 #define OLED_ADDRESS  0x3C
 #define BUTTON_PIN    2
 
-#define CLOCK_SHOW_MS  5000UL      // 時計表示時間（5秒） 
-#define NTP_RESYNC_MS  3600000UL   // NTP同期の間隔（1時間）
+#define CLOCK_SHOW_MS  5000UL
+#define NTP_RESYNC_MS  3600000UL
 
 // ── 表示モード ─────────────────────────────────────
 typedef enum {
@@ -57,17 +46,6 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 QueueHandle_t xEmotionQueue;
 QueueHandle_t xModeQueue;
-
-// ── 関数プロトタイプ ───────────────────────────────
-// PlatformIO（C++）では .ino と違い前方宣言が必要
-void setup();
-void loop();
-void TaskDisplay (void *pvParameters);
-void TaskEmotion (void *pvParameters);
-void TaskButton  (void *pvParameters);
-void TaskNTP     (void *pvParameters);
-static bool connectWiFi();
-static EmotionType weightedRandom();
 
 // ── WiFi接続 ──────────────────────────────────────
 static bool connectWiFi() {
