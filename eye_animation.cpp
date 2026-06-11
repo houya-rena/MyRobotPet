@@ -61,42 +61,68 @@ static inline int8_t lerpI(int8_t a, int8_t b, float t){
     return (int8_t)(a+(b-a)*t);
 }
 
-// 目を1つ描画
+// 目を1つ描画// ══════════════════════════════════════════════════
+// 「うるうるロボお目目」描画関数（入れ替え案）
+// ══════════════════════════════════════════════════
 static void drawOneEye(Adafruit_SSD1306 &dsp,
                        int cx, int cy, int rx, int ry,
                        const EyeShape &sh,
                        int8_t gx, int8_t gy)
 {
-    // 白目
+    // 1. 白目（ベース）
     dsp.fillEllipse(cx, cy, rx, ry, WHITE);
 
-    // 上まぶた（閉じ度合いを黒で塗りつぶして表現）
+    // 2. まぶた（閉じ度合いを黒で塗りつぶす）
+    // ★垂直線(drawFastVLine)方式を維持しつつ、カーブを少し緩やかに
     int lidH = (int)(ry * (1.0f - s_eyeOpen));
     if (lidH > 0) {
         for (int px = cx - rx; px <= cx + rx; px++) {
             float t    = (float)(px - cx) / (float)rx;
-            float curv = sh.upperCurve * (1.0f - t*t) * ry * 0.3f;
-            float tilt = sh.tiltInner  * (1.0f - fabsf(t)) * (-1.0f);
+            // カーブと傾きを少し抑えて、自然な閉じ方に
+            float curv = sh.upperCurve * (1.0f - t*t) * ry * 0.2f; 
+            float tilt = sh.tiltInner  * (1.0f - fabsf(t)) * (-0.8f);
             int   bot  = (int)(cy - ry + lidH + curv + tilt);
-            dsp.drawFastVLine(px, cy - ry - 1, bot - (cy - ry) + 2, BLACK);
+            // まぶたの端を少し滑らかにするために、BLACKで太めに描画
+            dsp.drawFastVLine(px, cy - ry - 2, bot - (cy - ry) + 4, BLACK);
         }
     }
 
-    // 瞳（クリップ付き）
-    int px = constrain(cx + gx, cx - rx + PUPIL_RADIUS + 2,
-                                cx + rx - PUPIL_RADIUS - 2);
-    int py = constrain(cy + gy, cy - ry + PUPIL_RADIUS + 2,
-                                cy + ry - PUPIL_RADIUS - 2);
-    dsp.fillCircle(px, py, PUPIL_RADIUS, BLACK);
+    // 3. 瞳（クリップ付き、少し大きく）
+    // ★PUPIL_RADIUSを基準に、虹彩を少し大きめの円に
+    int irisR = PUPIL_RADIUS + 3; // 虹彩（外側の大きな円）
+    int pupilR = PUPIL_RADIUS - 1; // 瞳孔（内側の小さな円）
 
-    // ハイライト（瞳の左上に白点2px）
-    dsp.drawPixel(px - 2, py - 2, WHITE);
-    dsp.drawPixel(px - 1, py - 2, WHITE);
+    int px = constrain(cx + gx, cx - rx + irisR + 1,
+                                cx + rx - irisR - 1);
+    int py = constrain(cy + gy, cy - ry + irisR + 1,
+                                cy + ry - irisR - 1);
 
-    // 縁取り
+    // 虹彩（外側：少しグレーに近い黒...SSD1306では無理なので、WHITEの点々で擬似グラデーション）
+    // ★ここが「うるうる」の鍵！虹彩に少し表情をつける
+    dsp.fillCircle(px, py, irisR, BLACK);
+    
+    // 擬似虹彩グラデーション（WHITEで細かく点を打つ）
+    for(int i=0; i<360; i+=45){
+        float rad = i * DEG_TO_RAD;
+        dsp.drawPixel(px + cos(rad)*(irisR-1), py + sin(rad)*(irisR-1), WHITE);
+    }
+
+    // 瞳孔（内側：真っ黒）
+    dsp.fillCircle(px, py, pupilR, BLACK);
+
+    // 4. うるうるハイライト（ここが命！）
+    // ★大きな「光の映り込み」を楕円で追加
+    
+    // ハイライトA（大きな楕円：左上）
+    dsp.fillEllipse(px - 2, py - 2, 2, 3, WHITE);
+
+    // ハイライトB（小さな丸：右下、少し小さく）
+    // ★これにより、光が複数の方向から当たっているように見せる
+    dsp.fillCircle(px + 2, py + 2, 1, WHITE);
+
+    // 5. 縁取り（最後に BLACK で締める）
     dsp.drawEllipse(cx, cy, rx, ry, BLACK);
 }
-
 // ══════════════════════════════════════════════════
 // 公開関数
 // ══════════════════════════════════════════════════

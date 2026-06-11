@@ -17,7 +17,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Arduino_FreeRTOS.h>
-#include <queue.h>
+#include <queue>
 #include <WiFiS3.h>
 #include <RTC.h>
 
@@ -26,6 +26,7 @@
 #include "clock_display.h"
 #include "ntp_sync.h"
 #include "arduino_secrets.h"
+#include "Weather_task.h" // 追加
 
 // ── ハードウェア設定 ───────────────────────────────
 #define OLED_RESET    -1
@@ -54,7 +55,7 @@ static bool connectWiFi() {
         return false;
     }
     Serial.print(F("[WiFi] Connecting"));
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 5; i++) {
         if (WiFi.begin(SECRET_SSID, SECRET_PASS) == WL_CONNECTED) {
             Serial.println();
             Serial.print(F("[WiFi] Connected: "));
@@ -62,11 +63,28 @@ static bool connectWiFi() {
             return true;
         }
         Serial.print('.');
-        delay(1500);
+        delay(500);
     }
     Serial.println(F("\n[WiFi] Failed"));
     return false;
 }
+
+// static bool connectWiFi() {
+//     // 2.4GHzのチャネルやセキュリティを明示的に指定する場合の書き方
+//     // まずは既存のWiFi情報で再挑戦しますが、WiFi.beginの直前に少し待機を入れます
+//     WiFi.disconnect();
+//     delay(1000); 
+    
+//     Serial.print(F("[WiFi] Connecting"));
+//     WiFi.begin(SECRET_SSID, SECRET_PASS);
+    
+//     // ここを少し長めに待つように変更（最大40秒）
+//     int timeout = 40; 
+//     while (WiFi.status() != WL_CONNECTED && timeout > 0) {
+//         delay(1000);
+//         Serial.print('.');
+//         timeout--;
+//     }
 
 // ── setup() ──────────────────────────────────────
 void setup() {
@@ -74,34 +92,43 @@ void setup() {
     pinMode(BUTTON_PIN, INPUT_PULLUP);
 
     if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS)) {
-        Serial.println(F("OLED init failed"));
         while (true);
     }
+    
+    // 画面に状況を表示
     display.clearDisplay();
+    display.setCursor(0, 0);
+    display.print("Connecting WiFi...");
     display.display();
 
-    RTC.begin();
-
-    if (connectWiFi()) {
-        if (!ntpSync()) {
-            Serial.println(F("[NTP] Initial sync failed"));
-        }
+    // 1. WiFiが繋がるまでここから出ない（最強の安定化）
+    while (!connectWiFi()) {
+        Serial.println("Retrying connection...");
+        delay(2000);
     }
 
-    eyeInit(display);
+    // 2. 接続後に安定するまで少し待つ
+    delay(3000); 
 
+    // 3. NTP同期（RTCの初期化もここで行う）
+    RTC.begin();
+    if (!ntpSync()) {
+        Serial.println(F("[NTP] Initial sync failed"));
+    } else {
+        Serial.println(F("[NTP] Time synced successfully!"));
+    }
+
+    // 4. ここで初めて目などのタスクを起動する
+    eyeInit(display);
+    
     xEmotionQueue = xQueueCreate(4, sizeof(EmotionType));
     xModeQueue    = xQueueCreate(2, sizeof(DisplayMode));
-    if (!xEmotionQueue || !xModeQueue) {
-        Serial.println(F("Queue creation failed"));
-        while (true);
-    }
 
     xTaskCreate(TaskDisplay, "Display", 512, NULL, 3, NULL);
     xTaskCreate(TaskEmotion, "Emotion", 256, NULL, 2, NULL);
     xTaskCreate(TaskButton,  "Button",  128, NULL, 2, NULL);
     xTaskCreate(TaskNTP,     "NTP",     512, NULL, 1, NULL);
-
+    xTaskCreate(TaskWeather, "Weather", 1024, NULL, 1, NULL); // 追加！メモリは少し多めに確保
     vTaskStartScheduler();
 }
 
@@ -203,5 +230,27 @@ void TaskNTP(void *pvParameters) {
             connectWiFi();
         }
         vTaskDelay(pdMS_TO_TICKS(NTP_RESYNC_MS));
+    }
+}
+
+    // ══════════════════════════════════════════════════
+// TaskWeather
+// ══════════════════════════════════════════════════
+void TaskWeather(void *pvParameters) {
+    weatherTaskInit(); // 初期化（URL生成）
+    
+    for (;;) {
+        // 天気を取得して感情タイプを判定
+        EmotionType e = weatherTaskUpdate();
+        
+        // 成功した場合のみ、ロボットに感情を反映させる
+        if (e != EMOTION_COUNT) {
+            xQueueSend(xEmotionQueue, &e, 0);
+            Serial.print(F("[TaskWeather] Updated emotion: "));
+            Serial.println((int)e);
+        }
+        
+        // 10分待機（WeatherTask.hの定義を使用）
+        vTaskDelay(pdMS_TO_TICKS(WEATHER_INTERVAL_MS));
     }
 }
