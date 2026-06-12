@@ -3,7 +3,7 @@
 .clang_d/
 .vscode/
 .env
-
+.theia/
 # Build files
 build/
 *build*
@@ -13,6 +13,7 @@ build/
 *.hex
 *.map
 *.d
+.json
 
 # OS junk
 .DS_Store
