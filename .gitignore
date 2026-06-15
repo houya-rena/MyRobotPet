@@ -4,6 +4,7 @@
 .vscode/
 .env
 .theia/
+
 # Build files
 build/
 *build*
