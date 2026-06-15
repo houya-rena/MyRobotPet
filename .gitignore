@@ -34,3 +34,9 @@ arduino_secrets.h
 # Arduino IDEのバージョン管理フォルダを除外
 ArduinoIDE.0612ver/
 ArduinoIDE.0615ver/
+
+# Arduino IDEのバージョン管理フォルダを除外
+ArduinoIDE.*/
+
+# Platform IOのバージョン管理フォルダを除外
+platform IO.ver/
