@@ -30,3 +30,7 @@ _code-memo/
 
 ## wifiのID等
 arduino_secrets.h
+
+# Arduino IDEのバージョン管理フォルダを除外
+ArduinoIDE.0612ver/
+ArduinoIDE.0615ver/
