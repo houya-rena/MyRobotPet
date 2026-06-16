@@ -22,14 +22,16 @@
  *   WORRIED  : 「ピピピ…」   近い2音を素早く往復（震え）
  *   VOID     : 「…」         低い単調音（無音に近い）
  */
- 
-#include "Sound.h"
-#include "pitches.h" // 追加
+ #include "Sound.h"
+#include "pitches.h"
 #include "eye_animation.h"
 #include <Arduino.h>
 #include <Arduino_FreeRTOS.h>
 
-// 音の間のギャップを少し調整することで、スピーカー特有の音割れを防ぐ
+#if ENABLE_SOUND > 0
+#include <Tone.h>
+
+// 音の間のギャップを少し調整
 static void beep(uint16_t freq, uint16_t durationMs, uint16_t gapMs = 15) {
     tone(BUZZER_PIN, freq);
     vTaskDelay(pdMS_TO_TICKS(durationMs));
@@ -39,64 +41,10 @@ static void beep(uint16_t freq, uint16_t durationMs, uint16_t gapMs = 15) {
 
 void soundInit() {
     pinMode(BUZZER_PIN, OUTPUT);
-    // noTone(BUZZER_PIN);
 }
 
-// void playClick() {
-//     // スピーカーは高音が綺麗に出るので、少し短くしてもはっきり聞こえます
-//     beep(NOTE_C6, 20, 0);
-// }
-
-// void playCry(EmotionType emotion) {
-//     switch (emotion) {
-//         case EMOTION_NORMAL:
-//             beep(NOTE_A4, 50);
-//             break;
-//         case EMOTION_HAPPY:
-//             // ピロリ♪
-//             beep(1350, 35, 3);
-//             beep(1680, 35, 3);
-//             beep(2200, 55);
-//             break;
-//         case EMOTION_SAD:
-//             // ピュゥ…
-//             beep(1000, 80, 5);
-//             beep(850, 100, 5);
-//             beep(700, 140);
-//             break;
-//         case EMOTION_CONFUSED:
-//             // ピポピポ？
-//             beep(1200, 40, 3);
-//             beep(900, 40, 3);
-//             beep(1200, 40, 3);
-//             beep(900, 80);
-//             break;
-//         case EMOTION_ANGRY:
-//             // ブブッ！
-
-//             beep(320, 50, 5);
-//             beep(320, 50, 5);
-//             beep(280, 80);
-//             break;
-//         case EMOTION_SLEEPY:
-//             //ふぁぁ〜…
-//             for (int f = 600; f >= 250; f -= 15) {
-//                 tone(BUZZER_PIN, f);
-//                 vTaskDelay(pdMS_TO_TICKS(15));
-//             }
-//             noTone(BUZZER_PIN);
-//             break;
-//         // 他の感情も同様に調整可能
-//         default:
-//             beep(NOTE_A4, 100);
-//             break;
-//     }
-// }
-
-void playCry(EmotionType emotion)
-{
-    switch (emotion)
-    {
+void playCry(EmotionType emotion) {
+    switch (emotion) {
         case EMOTION_HAPPY:
             beep(NOTE_C5, 80);
             beep(NOTE_E5, 80);
@@ -112,3 +60,8 @@ void playCry(EmotionType emotion)
             break;
     }
 }
+#else
+// サウンド機能OFF時のスタブ（空関数）
+void soundInit() {}
+void playCry(EmotionType emotion) { (void)emotion; } 
+#endif

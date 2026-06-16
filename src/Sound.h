@@ -1,6 +1,10 @@
 #ifndef SOUND_H
 #define SOUND_H
 
+// --- サウンド機能の切り替え ---
+// 1 = 有効, 0 = 無効
+#define ENABLE_SOUND 0
+
 #include <Arduino.h>
 #include "eye_animation.h" // ★これが必要です！
 
