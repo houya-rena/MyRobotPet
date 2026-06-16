@@ -215,7 +215,7 @@ void TaskDisplay(void *pvParameters) {
             if (modeMsg == MODE_EYE) {
                 // 明示的な「目に戻る」
                 mode = MODE_EYE;
-            } else if (modeMsg == mode && mode != MODE_EYE) {
+            } else if (modeMsg == mode) {
                 // 同じモードのボタンを再押し → 即座に目に戻る
                 mode = MODE_EYE;
                 Serial.println(F("[DISPLAY] re-press -> back to eye"));
