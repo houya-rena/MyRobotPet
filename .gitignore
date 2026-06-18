@@ -40,3 +40,5 @@ ArduinoIDE.*/
 
 # Platform IOのバージョン管理フォルダを除外
 platform IO.ver/
+
+*.png
