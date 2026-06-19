@@ -51,7 +51,7 @@
 #include "eye_animation.h"
 #include "clock_display.h"
 #include "ntp_sync.h"
-#include "Sound.h"
+#include "sound.h"
 #include "arduino_secrets.h"
 
 // ── ハードウェア設定 ───────────────────────────────
