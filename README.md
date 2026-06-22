@@ -18,7 +18,8 @@
 
 ## 完成イメージ
 
-![完成イメージ](image.png)
+<img width="1380" height="752" alt="image" src="https://github.com/user-attachments/assets/5918699d-3ab9-430a-b0ba-d5d94294a610" />
+
 
 ## メモリ管理状況
 
