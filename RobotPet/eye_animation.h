@@ -38,13 +38,10 @@ typedef enum {
 typedef enum {
     EMOTION_NORMAL = 0,  // 通常
     EMOTION_HAPPY,       // 嬉しい  ↑↑（^^目 + ニコニコ口）
-    EMOTION_HOT,         // 暑い    （半目）
+    EMOTION_SAD,         // 暑い    （半目）
     EMOTION_ANGRY,       // 怒り    （つり目）
     EMOTION_SLEEPY,      // ウトウト （とろ〜ん目・まばたきが遅い）
     EMOTION_CONFUSED,    // 困惑    （><目）
-    EMOTION_WORRIED,     // 心配    （×× 目 + 悲し口）
-    EMOTION_SURPRISED,   // 驚き
-    EMOTION_RAINY,
     EMOTION_COUNT        // 感情の総数を知るためのダミー項目
 } EmotionType;
  
