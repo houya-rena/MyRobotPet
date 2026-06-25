@@ -20,6 +20,9 @@
 
 <img width="1380" height="752" alt="image" src="https://github.com/user-attachments/assets/5918699d-3ab9-430a-b0ba-d5d94294a610" />
 
+## 回路図
+
+<img width="879" height="591" alt="スクリーンショット 2026-06-25 15 35 54" src="https://github.com/user-attachments/assets/4247ec28-a2e0-467e-987a-c237de24c126" />
 
 ## メモリ管理状況
 
