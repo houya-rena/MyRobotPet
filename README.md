@@ -158,4 +158,4 @@ my-robot-pet/
 
 ## [完成イメージフォルダ](https://github.com/houya-rena/MyRobotPet/tree/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8)
 
-- [表示されるテキスト](URL)
+- [完成イメージ動画](https://github.com/houya-rena/MyRobotPet/blob/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8/%E5%AE%9F%E9%9A%9B%E3%81%AE%E5%8B%95%E4%BD%9C%E5%8B%95%E7%94%BB.md)
