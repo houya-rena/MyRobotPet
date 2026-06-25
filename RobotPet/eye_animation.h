@@ -1,53 +1,77 @@
-#ifndef EYE_ANIMATION_H // 「もしEYE_ANIMSTION_Hが定義されていなければ」
-#define EYE_ANIMATION_H // 「ここで定義せよ（二重読み込み防止のガード）」
- 
-#include <Adafruit_GFX.h>       // グラフィック描写用ライブラリ
-#include <Adafruit_SSD1306.h>   // OLEDディスプレイ制御用ライブラリ
- 
-// ── OLEDディスプレイの物理的なサイズ設定 ──────────────────────────────────────
+#ifndef EYE_ANIMATION_H
+#define EYE_ANIMATION_H
+
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+// ── OLEDディスプレイの物理サイズ ──────────────────────────────
 #define SCREEN_WIDTH  128
 #define SCREEN_HEIGHT  64
- 
-// ── 目の位置とサイズの基本設計図 ─────────────────────────────────
-// 左右の目の中心座標と半径を定義。ここを変更すると顔の配置が変わる
-#define EYE_CENTER_Y      28
-#define EYE_L_CENTER_X    36
-#define EYE_R_CENTER_X    92
-#define EYE_RADIUS_X      22
-#define EYE_RADIUS_Y_MAX  18 // ※現在は正円で描画しているため、あまり影響しない
-#define PUPIL_RADIUS       6 // 黒目の大きさ
-#define PUPIL_MOVE_RANGE   8 // 黒目が動く最大範囲
- 
-// ── タイミング設定（ms）────────────────────────────
-// まばたきや視線移動の感覚。ここを大きくすると落ち着いたロボットになる
-#define BLINK_INTERVAL_MIN  2000
-#define BLINK_INTERVAL_MAX  5000
-#define GAZE_INTERVAL_MIN   3000
-#define GAZE_INTERVAL_MAX   5000
- 
-// ── 口の種類 ───────────────────────────────────────
-// どのような口を描くかを番号で整理
+
+// ── 目の位置・サイズ定数 ──────────────────────────────────────
+#define EYE_CENTER_Y        28
+#define EYE_L_CENTER_X      36
+#define EYE_R_CENTER_X      92
+#define EYE_RADIUS_X        22
+#define PUPIL_MOVE_RANGE     6
+
+#define MOUTH_Y_POS 50
+#define ITEM_X_POS  104
+#define ITEM_Y_POS   48
+
+// ── タイミング設定（ms）──────────────────────────────────────
+#define BLINK_INTERVAL_MIN 2000
+#define BLINK_INTERVAL_MAX 5000
+#define GAZE_INTERVAL_MIN  1500
+#define GAZE_INTERVAL_MAX  4000
+
+// ── 目パラメータ構造体 ────────────────────────────────────────
+typedef struct {
+    float lidClose;    // まぶたの閉じ度合い（0.0〜1.0）
+    float lidCut;      // まぶたのカット量（拡張用予約）
+    bool  tearLeft;    // 左目特殊パーツ表示フラグ
+    bool  tearRight;   // 右目特殊パーツ表示フラグ
+    float gazeScale;   // 視線移動の大きさ倍率
+} EyeParam;
+
+// ── 画面モード ────────────────────────────────────────────────
 typedef enum {
-    MOUTH_NONE = 0,   // 口なし（通常・HOT・ANGRYなど）
-    MOUTH_HAPPY,      // ニコニコ（上カーブ）
-    MOUTH_SAD,        // 悲しい（下カーブ）
-    MOUTH_FLAT,       // 虚無（横線）
-} MouthType;
- 
-// ── 感情タイプ ─────────────────────────────────────
+    MODE_FACE,
+    MODE_EVENT
+} DisplayModeType;
+
+// ── 感情列挙型 ────────────────────────────────────────────────
+// ▼ EMOTION_COUNT は TIME_WEIGHTS テーブルの列数と必ず一致させること
 typedef enum {
-    EMOTION_NORMAL = 0,  // 通常
-    EMOTION_HAPPY,       // 嬉しい  ↑↑（^^目 + ニコニコ口）
-    EMOTION_SAD,         // 暑い    （半目）
-    EMOTION_ANGRY,       // 怒り    （つり目）
-    EMOTION_SLEEPY,      // ウトウト （とろ〜ん目・まばたきが遅い）
-    EMOTION_CONFUSED,    // 困惑    （><目）
-    EMOTION_COUNT        // 感情の総数を知るためのダミー項目
+    EMOTION_NORMAL = 0,  // [0]
+    EMOTION_HAPPY,       // [1]
+    EMOTION_ANGRY,       // [2]
+    EMOTION_SAD,         // [3]
+    EMOTION_CONFUSED,    // [4]
+    EMOTION_SLEEPY,      // [5]
+    EMOTION_EATING,      // [6]
+    EMOTION_SLEEPING,    // [7]
+    EMOTION_BATH,        // [8]
+    EMOTION_SNACK,       // [9]
+    EMOTION_COUNT        // 要素数（テーブルのサイズ管理に使用）
 } EmotionType;
- 
-// ── 公開関数（外部から呼び出す「入口」） ───────────────────────────────────────
-// ロボット全体で使用できるように、関数を公開
-void eyeInit(Adafruit_SSD1306 &display);    // ロボット起動時の初期化
-void eyeUpdate(Adafruit_SSD1306 &display, EmotionType emotion); // 表情の更新処理
+
+// ── 公開関数 ──────────────────────────────────────────────────
+
+/**
+ * eyeInit : OLEDと内部状態をまとめて初期化する。
+ * TaskInitAndLaunch から一度だけ呼ぶこと。
+ * （旧: eyeStateInit を直接呼んでいた部分をこれに置き換える）
+ */
+void eyeInit(Adafruit_SSD1306 &dsp);
+
+/**
+ * eyeUpdate : 毎フレーム呼び出す描画関数。
+ * TaskDisplay の描画ループから呼ぶこと。
+ */
+void eyeUpdate(Adafruit_SSD1306 &dsp, EmotionType emotion);
+
+// ▼ eyeUpdateRTC は削除。
+//   時刻→感情の変換は TaskEmotion / robot_pet.ino 側で行うため不要。
 
 #endif // EYE_ANIMATION_H

@@ -63,8 +63,9 @@ void clockDraw(Adafruit_SSD1306 &display) {
 
     // ── 秒（SS）を小さく表示 ─────────────────────────────────
     // setTextSize(2)で少し小さくし、右端(100px目)に配置
-    display.setTextSize(1);
-    display.setCursor(100, 27);
+    display.setTextSize(2);
+    display.setCursor(100, 16);
+    display.print(':');
     printTwoDigit(display, now.getSeconds());
 
     // ── 区切り線 ───────────────────────────────────────────
