@@ -11,6 +11,9 @@
 - **表現力の追求**: 数式による描画ロジックと状態遷移を用いた、愛着の湧くインタラクティブな表現。
 
 
+https://github.com/user-attachments/assets/a2aa4552-e183-4d18-84ef-1096909a739d
+
+
 ## 使用技術・環境
  
 | 分野 | 技術 / ツール |
@@ -306,3 +309,4 @@ board_upload.use_1200bps_touch = yes
 - [完成イメージ動画](https://github.com/houya-rena/MyRobotPet/blob/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8/%E5%AE%9F%E9%9A%9B%E3%81%AE%E5%8B%95%E4%BD%9C%E5%8B%95%E7%94%BB.md)
 - [時間帯別表情](https://github.com/houya-rena/MyRobotPet/blob/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8/%E6%99%82%E9%96%93%E5%B8%AF%E5%88%A5%E3%82%A4%E3%83%99%E3%83%B3%E3%83%88%E8%A1%A8%E6%83%85.md)
 - [通常の表情バリエーション](https://github.com/houya-rena/MyRobotPet/blob/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8/%E8%A1%A8%E6%83%85%E7%94%BB%E5%83%8F.md)
+
