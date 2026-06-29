@@ -12,7 +12,7 @@
 // 0(無音) 〜 255(最大電圧) の間で設定可能
 // 数値を「8」や「12」などの低い値に抑えることで、スピーカーの音割れを防ぎ、
 // たまごっち特有のポコポコとした角の丸い、耳に優しいピコピコ音を作成
-#define DAC_VOLUME_LEVEL  8  
+#define DAC_VOLUME_LEVEL  12
 
 // 【音と音の間のすき間（デフォルト値）】
 // 1つの音が鳴り終わってから、次の音が鳴るまでの「無音時間（ミリ秒）」
@@ -76,7 +76,7 @@ void playCry(EmotionType emotion) {
     // 各感情ごとのメロディデータ（この部分を変更し、音を作成）
     switch (emotion) {
 
-        case EMOTION_NORMAL:　// ノーマル
+        case EMOTION_NORMAL: // ノーマル
             // 音階（NOTE_XX）を細かく階段状に並べることで、生き物らしいしゃべり方の抑揚を再現
             // 音の長さ（25〜80）を全体的に短くすると「早口」に、長くすると「のんびり」喋る
             // 【ピカチュウ風】「ピカァ〜チュゥ♪」
@@ -133,7 +133,7 @@ void playCry(EmotionType emotion) {
             r4_dac_tone(NOTE_F6, 50, 10);  // プンッ
             r4_dac_tone(NOTE_G6, 120);     // ッサーー！（最後は少し高い音をキツめに長く鳴らす）
             break;
-
+        
         case EMOTION_SLEEPY:
             // 【ウトウトあくび】
             // カスタマイズのコツ：
@@ -146,6 +146,68 @@ void playCry(EmotionType emotion) {
             r4_dac_tone(NOTE_C5, 40);  // ぅ （最後はベッドに倒れ込むように短く消える）
             break;
 
+        case EMOTION_EATING:
+        case EMOTION_SNACK:
+            // 【おやつ・もぐもぐ】
+            // カスタマイズのコツ：
+            // 短く鋭い音（40ms）を刻んで「噛んでいる感」を出し、
+            // 最後に高い音（C7）を少し長めに鳴らして「美味しかった！」という満足感を表現
+            r4_dac_tone(NOTE_A5, 40);  
+            delay(30);
+            r4_dac_tone(NOTE_AS5, 40); 
+            delay(30);
+            r4_dac_tone(NOTE_A5, 40);  
+            delay(50);
+            r4_dac_tone(NOTE_C7, 100); // 満足げにペロッと一鳴き
+            break;
+        
+        case EMOTION_SMILE:
+            // 【人が近づいた！・超ニコニコ】
+            // 短くハッピーな高音（50ms）をリズミカルにトコトコと刻み、
+            // 最後に突き抜ける最高音（E7）を長めに鳴らして「見つけて大喜び」を表現！
+            r4_dac_tone(NOTE_C6, 40);  
+            delay(30);
+            r4_dac_tone(NOTE_E6, 40); 
+            delay(30);
+            r4_dac_tone(NOTE_G6, 40);  
+            delay(30);
+            r4_dac_tone(NOTE_C7, 40);
+            delay(40);
+            r4_dac_tone(NOTE_E7, 120); // 嬉しさ全開の超高音ジャンプ！
+            break;
+        
+        case EMOTION_FEAST:
+            // ⭐ [追加] 歓喜のごちそう専用サウンド
+            // 前半：激しいもぐもぐラッシュ（音程を上げながら4回高速パルス）
+            for(int i=0; i<4; i++) {
+                r4_dac_tone(NOTE_F5 + (i*20), 30);  
+                delay(15);
+                r4_dac_tone(NOTE_A5 + (i*20), 30); 
+                delay(15);
+            }
+            delay(40);
+            
+            // 中半：おいしくて頭を振っているようなトレモロ音
+            for(int i=0; i<3; i++) {
+                r4_dac_tone(NOTE_C6, 25);
+                r4_dac_tone(NOTE_E6, 25);
+            }
+            delay(60);
+
+            // 後半：嬉しさ大爆発の最高音グリッサンドファンファーレ！
+            r4_dac_tone(NOTE_C6, 20);
+            delay(10);
+            r4_dac_tone(NOTE_E6, 20);
+            delay(10);
+            r4_dac_tone(NOTE_G6, 20);
+            delay(10);
+            r4_dac_tone(NOTE_C7, 20);
+            delay(10);
+            r4_dac_tone(NOTE_E7, 30);
+            delay(10);
+            r4_dac_tone(NOTE_G7, 180); // 突き抜ける超高音でフィニッシュ！
+            break;
+        
         default:
             // 想定外の感情のセーフティ（プッ）
             r4_dac_tone(NOTE_A5, 100);

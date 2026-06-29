@@ -422,21 +422,24 @@ void TaskDisplay(void *pvParameters) {
 
 void TaskButton(void *pvParameters) {
     bool lastClock   = HIGH; // 前回のピン状態を記憶（チャタリング・エッジ検出用）
-    uint8_t sensorTick = 0; 
+    uint8_t sensorTick = 0;  // 超音波センサーの実行周期（500ms）を作るための Tick カウンタ
    
     for (;;) {
-        bool curClock   = digitalRead(BUTTON_CLOCK);
-       
-        // ── 1. ボタン（時刻）の立ち下がり（HIGHからLOWへ変化した瞬間）検出 ─────────────────────
-        if (lastClock == HIGH && curClock == LOW) {
 
-            // チャタリング対策：
+        // ── 【機能1】物理ボタンの監視 ─────────────────────────────────────────
+        // 10ms 周期の高速サンプリングでボタンの状態をポーリング
+        bool curClock   = digitalRead(BUTTON_CLOCK);
+
+        // 立ち下がりエッジ検出：ボタンが「今、押された瞬間」（HIGHからLOWへ変化）を捕捉
+       if (lastClock == HIGH && curClock == LOW) {
+
+            // チャタリング対策（デバウンス処理）：
             // 20ms待機して電圧が落ち着いた段階で再確認することで、誤検知を徹底的に排除
             vTaskDelay(pdMS_TO_TICKS(20));
         
-            if (digitalRead(BUTTON_CLOCK) == LOW) {
+            if (digitalRead(BUTTON_CLOCK) == LOW) { // 20ms後もLOWなら「本物の押下」と確定
 
-                // 1. 音タスクへのメッセージ送信
+                // 1. 音タスクへの操作音（クリック音）の発行リクエスト
                 SoundEvent btnEvent;
                 btnEvent.isClick = true; 
                 btnEvent.emotion = EMOTION_NORMAL; 
@@ -445,7 +448,7 @@ void TaskButton(void *pvParameters) {
                 // 構造体の中身を値渡し（コピー）でキューに放り込む。第3引数0なので、キューが満杯なら諦める
                 xQueueSend(xSoundQueue, &btnEvent, 0);
 
-                // 2. 表示タスクへのメッセージ送信
+                // 2. 表示（ディスプレイ）タスクへ「時計モード」への切り替え命令メッセージ送信
                 DisplayMode m = MODE_CLOCK;
                 xQueueSend(xModeQueue, &m, 0);
 
@@ -453,12 +456,16 @@ void TaskButton(void *pvParameters) {
             }
         }
 
-        lastClock  = curClock; // 今回の状態を次回の「過去のデータ」として保存
+        // 今回の状態を次回の「過去のデータ」として保存し、次回のループで比較に使用する
+        lastClock  = curClock;
 
-        // ── 2. 超音波センサー：割り込み結果の安全な回収（500msに1回） ──
+        // ── 【機能2】超音波センサー：割り込み結果の安全な回収と判定（500msに1回） ──────────────────
+        // タスク全体の10ms周期をカウントアップ
         sensorTick++; // ループするたびに +1 する（10msごと）
 
-        if (sensorTick >= 50) { // 10ms * 50 = 500ms（50回）
+        // 10ms * 50回 = 500ms（0.5秒）周期でセンサー処理を実行
+        // 超音波の乱反射防止、及びマイコンへの処理負荷を最適化するためのタームベース設計
+        if (sensorTick >= 50) { 
             sensorTick = 0;     // カウントを0にリセットし、また1から数え直す
 
             // 距離計測は常に行う（手がある間も離れた瞬間を検知するために必須）
