@@ -13,12 +13,18 @@
 #include "eye_draw.h"
 
 // ══════════════════════════════════════════════════
-// ほっぺ（照れ線）
+// ほっぺ（照れ線）（頬に3本の短いライン、照れ線 /// ）
 // ══════════════════════════════════════════════════
 void drawCheek(Adafruit_SSD1306 &dsp, int cx, int cy, int r) {
+
+    // 目の中心（cr）から、半径（r）より少し下の位置に頬を設定
     int cheekY = cy + r + 2;
+
+    // 画面外チェック（安全対策）
     if (cheekY + 4 >= SCREEN_HEIGHT) return;
 
+    // 左右のどちらの目かによって頬の位置を調整する
+    // 右の目なら右側、左の目なら左側に描画
     int offset  = (cx < SCREEN_WIDTH / 2) ? -8 : 8;
     int centerX = cx + offset;
 
@@ -35,17 +41,21 @@ void drawCheek(Adafruit_SSD1306 &dsp, int cx, int cy, int r) {
 // currentPgy: 左右それぞれの黒目Y位置追従値（呼び出し元で管理）
 // ══════════════════════════════════════════════════
 void drawOneEye(Adafruit_SSD1306 &dsp,
-                int cx, int cy, int r,
+                int cx, int cy, 
+                int r,      // 正円用（rx, ryを統合）
                 int8_t gx, int8_t gy,
                 float lidClose, float lidCut,
                 bool isLeft, EmotionType emotion)
 {
+
+    // ── まぶたの計算 ──────────────────────────────
+    // 感情(lidClose)とまばたき(lidCut)を合成して開度を決定 
     float effectiveLid = constrain(lidClose + lidCut, 0.0f, 1.0f);
     int   drawR        = r - 4;
 
     // ─── 【状態A】まぶた全閉 ───
     if (effectiveLid > 0.9f) {
-        if (emotion == EMOTION_SLEEPY) {
+        if (emotion == EMOTION_SLEEPY) { // 睡眠（EMOTION_SLEEPY）の状態の時
             int x_offset = r - 4;
             int sleepY   = cy + (drawR / 2) - 1;
             dsp.drawLine(cx - x_offset,     sleepY - 4, cx - x_offset + 3, sleepY - 1, WHITE);
@@ -59,7 +69,8 @@ void drawOneEye(Adafruit_SSD1306 &dsp,
         }
         return;
     }
-    // ✨【追加】EMOTION_SMILE（超ニコニコ）のときは、丸い白目や黒目を描かずにアーチ目にする
+
+    // EMOTION_SMILE（超ニコニコ）のときは、丸い白目や黒目を描かずにアーチ目にする
     if (emotion == EMOTION_SMILE) {
         // キュッと笑った上向きのアーチを引く (太さを出すために上下にずらして2回重ね描き)
         dsp.drawCircleHelper(cx, cy + 2, drawR, 1, WHITE); // 左上アーチ
@@ -75,6 +86,7 @@ void drawOneEye(Adafruit_SSD1306 &dsp,
         }
         return; // SMILEの描画はここで完了！
     }
+
     // ─── 【状態B】目が開いている ───
 
     // 1. 白目ベース
@@ -111,6 +123,9 @@ void drawOneEye(Adafruit_SSD1306 &dsp,
 
     // 3. 黒目（瞳）
     int iR  = max(2, drawR - 8);
+
+    // 黒目のキョロキョロ移動
+    // 黒目（iR）が白目からはみ出さないように制限をかけている
     int pgx = constrain((int)gx, -(drawR - iR - 1), (drawR - iR - 1));
     int pgy = constrain((int)gy, -(drawR - iR - 1), (drawR - iR - 1));
 
@@ -124,12 +139,12 @@ void drawOneEye(Adafruit_SSD1306 &dsp,
     dsp.fillCircle(pupilX, pupilY, iR, BLACK);
 
     // 4. ハイライト
-    if (emotion == EMOTION_SAD) {
+    if (emotion == EMOTION_SAD) { // 悲しい（EMOTION_SAD）の時
         dsp.fillCircle(pupilX + (iR / 2), pupilY - (iR / 2), 3, WHITE);
         dsp.fillCircle(pupilX - (iR / 2), pupilY + (iR / 2), 1, WHITE);
         dsp.fillCircle(pupilX + (iR / 4) - 3, pupilY + (iR / 2), 1, WHITE);
     }
-    else if (emotion == EMOTION_CONFUSED) {
+    else if (emotion == EMOTION_CONFUSED) {  // 困惑（EMOTION_CONFUSED）の時
         dsp.fillCircle(pupilX + (iR / 3), pupilY + (iR / 4), 2, WHITE);
         dsp.fillCircle(pupilX - (iR / 2), pupilY + (iR / 2), 1, WHITE);
     }
@@ -186,7 +201,7 @@ void drawOneEye(Adafruit_SSD1306 &dsp,
 }
 
 // ══════════════════════════════════════════════════
-// 鼻
+// 鼻（中央・目の下に点）
 // ══════════════════════════════════════════════════
 void drawNose(Adafruit_SSD1306 &dsp) {
     int nx = SCREEN_WIDTH / 2;
@@ -197,15 +212,16 @@ void drawNose(Adafruit_SSD1306 &dsp) {
 }
 
 // ══════════════════════════════════════════════════
-// 口
-// 【修正】isMouthOpen の条件式バグを修正
-//   旧: (emotion == EMOTION_EATING && EMOTION_SNACK) → 常にtrue（&&がポインタ評価）
-//   新: (emotion == EMOTION_EATING || emotion == EMOTION_SNACK) → 正しいOR条件
+// 口（感情によって変化）
 // ══════════════════════════════════════════════════
 void drawMouth(Adafruit_SSD1306 &dsp, EmotionType emotion, int frame) {
     const int mx = SCREEN_WIDTH / 2;
     const int my = 50;
 
+    // 画面の外への描画を防ぐためのバリア（安全策）
+    // my: 描こうとしている口の位置
+    // SCREEN_HIGHT: 画面の高さ（今回は63までの範囲）
+    // もし、口の位置が64以上の場合、描画処理をスキップする
     if (my >= SCREEN_HEIGHT) return;
 
     // もぐもぐ判定：EATING / SNACK のみ frame で口を動かす
@@ -217,6 +233,7 @@ void drawMouth(Adafruit_SSD1306 &dsp, EmotionType emotion, int frame) {
         case EMOTION_HAPPY:
         case EMOTION_SMILE:
         case EMOTION_FEAST:
+            // ω: 小さなW型
             dsp.drawPixel(mx - 5, my,     WHITE);
             dsp.drawPixel(mx - 4, my + 2, WHITE);
             dsp.drawPixel(mx - 3, my + 3, WHITE);
@@ -232,6 +249,7 @@ void drawMouth(Adafruit_SSD1306 &dsp, EmotionType emotion, int frame) {
 
         case EMOTION_ANGRY:
         case EMOTION_SAD:
+            // 下カーブ（悲しい口）
             dsp.drawLine(mx - 5, my + 3, mx,     my,     WHITE);
             dsp.drawLine(mx,     my,     mx + 5, my + 3, WHITE);
             dsp.drawPixel(mx,    my + 1, WHITE);
@@ -241,11 +259,13 @@ void drawMouth(Adafruit_SSD1306 &dsp, EmotionType emotion, int frame) {
         case EMOTION_SLEEPY:
         case EMOTION_SLEEPING:
         case EMOTION_BATH:
+            // 横線「ー」
             dsp.drawCircle(mx, my + 1, 1, WHITE);
             break;
 
         case EMOTION_EATING:
         case EMOTION_SNACK:
+            // 食べているようなもぐもぐ口
             if (isMouthOpen) {
                 dsp.drawRect(mx - 3, my, 6, 4, WHITE);   // 口を開けている
             } else {
@@ -260,7 +280,7 @@ void drawMouth(Adafruit_SSD1306 &dsp, EmotionType emotion, int frame) {
 }
 
 // ══════════════════════════════════════════════════
-// 🍙 ごはんアイテムのドット絵
+// ごはんアイテムのドット絵（茶碗に守られたご飯）
 // ══════════════════════════════════════════════════
 void drawFoodItem(Adafruit_SSD1306 &dsp, int frame) {
     const int bx = 104;
@@ -282,7 +302,7 @@ void drawFoodItem(Adafruit_SSD1306 &dsp, int frame) {
     }
 }
 // ══════════════════════════════════════════════════
-// 🍪 クッキーアイテムのドット絵（アニメーション対応）
+// おやつアイテムのドット絵（アニメーション対応：クッキー）
 // ══════════════════════════════════════════════════
 void drawSnackItem(Adafruit_SSD1306 &dsp, int frame) {
     const int bx = 104; // X座標
@@ -313,8 +333,9 @@ void drawSnackItem(Adafruit_SSD1306 &dsp, int frame) {
         dsp.drawPixel(bx - 1, by + 3, BLACK);
     }
 }
+
 // ══════════════════════════════════════════════════
-// 💤 Zzz... アニメーション
+// Zzz... アニメーション
 // ══════════════════════════════════════════════════
 void drawSleepZzz(Adafruit_SSD1306 &dsp, int frame) {
     const int zx = 104;
@@ -333,7 +354,7 @@ void drawSleepZzz(Adafruit_SSD1306 &dsp, int frame) {
 }
 
 // ══════════════════════════════════════════════════
-// 🛁 お湯の波線（画面下部）
+// お風呂のお湯の波線（画面下部）
 // ══════════════════════════════════════════════════
 void drawWaterLine(Adafruit_SSD1306 &dsp, int frame) {
     const int wy = SCREEN_HEIGHT - 3;
@@ -350,7 +371,7 @@ void drawWaterLine(Adafruit_SSD1306 &dsp, int frame) {
 }
 
 // ══════════════════════════════════════════════════
-// 🪖 頭のタオル
+// お風呂の際の頭のタオル
 // ══════════════════════════════════════════════════
 void drawHeadTowel(Adafruit_SSD1306 &dsp) {
     const int tx = (SCREEN_WIDTH / 2) - 10;
@@ -359,6 +380,10 @@ void drawHeadTowel(Adafruit_SSD1306 &dsp) {
     dsp.fillRect(tx, ty, 20, 5, WHITE);
     dsp.drawFastHLine(tx + 2, ty + 2, 16, BLACK);
 }
+
+// ══════════════════════════════════════════════════
+// おやつをもらった時のハート
+// ══════════════════════════════════════════════════
 void drawFloatingHearts(Adafruit_SSD1306 &dsp, int frame) {
     // 1. frame(0〜3)を使って、下から上へ移動するY座標を計算
     // 60から始まって、20まで上昇させる

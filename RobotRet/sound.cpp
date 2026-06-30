@@ -177,7 +177,7 @@ void playCry(EmotionType emotion) {
             break;
         
         case EMOTION_FEAST:
-            // ⭐ [追加] 歓喜のごちそう専用サウンド
+            // 歓喜のごちそう専用サウンド
             // 前半：激しいもぐもぐラッシュ（音程を上げながら4回高速パルス）
             for(int i=0; i<4; i++) {
                 r4_dac_tone(NOTE_F5 + (i*20), 30);  

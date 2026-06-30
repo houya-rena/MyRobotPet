@@ -457,9 +457,11 @@ void TaskDisplay(void *pvParameters) {
 
         // 2. 感情変化の受信（ここが最重要）
         if (xQueueReceive(xEmotionQueue, &emotionMsg, 0) == pdTRUE) {
+
             // スマホからのエサやり信号が来た場合
             // FEAST（エサやり）時は5秒間、他の感情変更をロックしてハート演出を優先する
             if (emotionMsg == EMOTION_FEAST) {
+
                 emotion = EMOTION_FEAST;
                 feastEnd = now + 5000UL; // 5秒キープ
                 isFeasting = true;
@@ -478,147 +480,252 @@ void TaskDisplay(void *pvParameters) {
             Serial.println(F("[DISPLAY] HEART MODE OFF"));
         }
 
-        // 4. 描画の実行（modeによって時計と目を選択）
+        // ── 描画の実行 ───────────────────────────────────────
+        // 【描画の振り分け】
+        // 現在のモードに応じて、実行すべき関数（計算処理）を切り替える
+        
         if (mode == MODE_EYE) {
-            // 💡 ここで確実に「現在のemotion」を渡す
+            // ここで確実に「現在のemotion」を渡し、感情に合わせた目をOLEDに表示する
             eyeUpdate(display, emotion);
+        
         } else {
+
+            // 時計モードの時、時刻を描写
             if (now >= showEnd) mode = MODE_EYE;
             clockDraw(display);
         }
 
+        // vTaskDelay(pdMS_TO_TICKS(66)): 約15fps(1000ms / 15 ≒ 66ms)の描画周期を作成
+        // 66msの間、このタスクは「CPUをOSに返却して休む」
+        // これにより、他タスク（ボタン検知等）がCPUを使えるようになる
         vTaskDelay(pdMS_TO_TICKS(66));
     }
 }
+
+
+// ═══════════════════════════════════════════════════
+// TaskButton : ボタン入力検知（チャタリング除去付き）& 外部割り込み式超音波式センサー
+//
+// 【動作ロジック】
+//   - 押した瞬間（立ち下がり）を検出
+//   - 20ms後に再確認（チャタリング除去）
+//   - ボタン → MODE_EYE（戻る）を送信
+//   - 目モード中 → 対応するモードを送信
+// ═══════════════════════════════════════════════════
 void TaskButton(void *pvParameters) {
-    bool lastClock   = HIGH;
-    uint8_t sensorTick = 0;  
+    bool lastClock   = HIGH;  // 前回のピン状態を記憶（チャタリング・エッジ検出用）
+    uint8_t sensorTick = 0;   // 超音波センサーの実行周期（500ms）を作るための Tick カウンタ
    
     for (;;) {
+
+        // ── 【機能1】物理ボタンの監視 ─────────────────────────────────────────
+       // 10ms 周期の高速サンプリングでボタン状態をポーリング
         bool curClock   = digitalRead(BUTTON_CLOCK);
+
+        // 立ち下がりエッジ検出: ボタンが「今、押された瞬間」（HIGHからLOWへ変化）を補足
         if (lastClock == HIGH && curClock == LOW) {
+
+            // チャタリング対策（デバウンス処理）：
+            // 20ms待機して電圧が落ち着いた段階で再確認することで、誤検知を徹底的に排除
             vTaskDelay(pdMS_TO_TICKS(20));
-            if (digitalRead(BUTTON_CLOCK) == LOW) { 
+
+            if (digitalRead(BUTTON_CLOCK) == LOW) { // 20ms後もLOWなら「本物の押下」と判定
+
+                // 1. 音タスクへの操作音（クリック音）の発行リクエスト
                 SoundEvent btnEvent;
                 btnEvent.isClick = true; 
                 btnEvent.emotion = EMOTION_NORMAL; 
+
+                // xQueueSend(宛先, 送信データのポインタ, 待機時間):
+                // 構造体の中身を橋渡し（コピー）でキューに絞り込む。第3引数が0なので、キューが満杯なら諦める
                 xQueueSend(xSoundQueue, &btnEvent, 0);
 
+                // 2. 表示（ディスプレイ）タスクへ「時計モード」へ切り替え命令メッセージ送信
                 DisplayMode m = MODE_CLOCK;
                 xQueueSend(xModeQueue, &m, 0);
+
                 Serial.println(F("[BTN1] clock")); 
             }
         }
+
+        // 今回の状態を次回の「過去のデータ」として保存し、次回のループで比較に使用する
         lastClock  = curClock;
 
-        sensorTick++;
+        // ── 【機能2】超音波センサー：割り込み結果の安全な回収と判定（500msに1回） ──────────────────
+        // タスク全体の10ms周期をカウントアップ
+        sensorTick++;   // ループする度に +1 する（10msごと）
+
+        // 10ms * 50回 = 500ms(0.5秒)周期でセンサー処理を実行
+        // 超音波の乱反射防止及びマイコンへの処理負荷を最適化するためのタイムベース設計
         if (sensorTick >= 50) { // 500ms周期
-            sensorTick = 0;
+            sensorTick = 0;     // カウントを0にリセットし、また1から数え直す
 
+            // 距離測定は常に行う（手がある間も離れた瞬間も検知するために必須）
+            // ── [C++ / 組み込み特論] クリティカルセクションによる変数保護 ──
+            // マイコンのCPUが多ビット変数（intやlong）を読み出す操作は、アトミック（一撃）ではない
+            // 読み出し中の割り込みによるデータ破損を防ぐため、一瞬だけ全体を割り込みを禁止にする
             noInterrupts();
-            int currentDistance = volatileCalculatedDistance; 
-            volatileCalculatedDistance = -1;
-            interrupts();
+            int currentDistance = volatileCalculatedDistance; // 安全にローカルへコピー
+            volatileCalculatedDistance = -1;                  // バッファを未計測状態にクリア
+            interrupts();                                     // 割り込み許可を即座に再開
 
+            // ── 次の距離計測パルスを送信 (Trigピンを10μsだけHIGHに) ──
+            // この一連の数マイクロ秒のパルス生成は、FreeRTOSのコンテキストスイッチに影響を与えない
             digitalWrite(ULTRA_TRIG_PIN, LOW);
             delayMicroseconds(2);
             digitalWrite(ULTRA_TRIG_PIN, HIGH);
             delayMicroseconds(10);
             digitalWrite(ULTRA_TRIG_PIN, LOW);
 
-            if (currentDistance > 0 && currentDistance < 400) { 
-                if (currentDistance <= DISTANCE_THRESHOLD && currentDistance > 2) {
-                    if (!isHandDetected) {  
-                        isHandDetected = true;
-                        EmotionType targetSmile = EMOTION_SMILE;
-                        xQueueSend(xEmotionQueue, &targetSmile, 0);  
+            // ── 取得した距離データの判定ロジック ──
+            if (currentDistance > 0 && currentDistance < 400) {  // 400cm以上の異常値・エラー除外
 
+                // ──── 【ケースA：手がしきい値内に近づいている時】 ────
+                if (currentDistance <= DISTANCE_THRESHOLD && currentDistance > 2) {
+                    if (!isHandDetected) {      // エッジ検出
+                        // 手を検知した時だけ実行（連打防止）
+                        isHandDetected = true;
+
+                        EmotionType targetSmile = EMOTION_SMILE;
+                        xQueueSend(xEmotionQueue, &targetSmile, 0);  // 液晶を即座に「笑顔（EMOTON＿SMILE）」にする
+
+                        // 音がまだなっていない時だけ送る
                         if (!isSensorReacting) {
-                            isSensorReacting = true;
+                            isSensorReacting = true;    // 音タスクが起きる前に、ボタン側で先行してロックを獲得
                             SoundEvent event;
                             event.isClick = false;
                             event.emotion = targetSmile;
-                            xQueueSend(xSoundQueue, &event, 0); 
+                            xQueueSend(xSoundQueue, &event, 0);  // SMILEに対応する音声を送信
                         }
+
                         Serial.println(F("[SENSOR] Hand detected -> SMILE"));
                     }
                 }
                 else {
-                    if (isHandDetected) {  
+                    // ──── 【ケースB：手がしきい値から離れた時】 ────
+                    if (isHandDetected) {   // エッジ検出（今まさに手が離れた瞬間）
                         isHandDetected = false;
+
+                        // TaskEmotion側が生成・更新し続けている「現在のベース感情」へ巻き戻す
                         EmotionType restoreEmotion = currentBaseEmotion;
                         xQueueSend(xEmotionQueue, &restoreEmotion, 0);
+
                         Serial.println(F("[SENSOR] Hand removed -> Restore Face"));
                     }
                 }
             }
         }   
+
+        // 10ms毎でループを回す
         vTaskDelay(pdMS_TO_TICKS(10));
     } 
 }
 
+// 【時間帯判別関数】
+// 現在の時刻からロボットにとっての「朝・昼・夜」を判定
 static RobotTimeZone getCurrentTimeZone() {
     RTCTime now;
-    RTC.getTime(now); 
+    RTC.getTime(now);  // 現在時刻を取得
     int h = now.getHour();
-    if      (h >= 6  && h < 9 ) return TZONE_MORNING;
-    else if (h >= 9  && h < 12) return TZONE_WORK;
-    else if (h >= 12 && h < 15) return TZONE_AFTERLUNCH;
-    else if (h >= 15 && h < 18) return TZONE_AFTERNOON;
-    else if (h >= 15 && h < 18) return TZONE_AFTERNOON;
-    else if (h >= 18 && h < 22) return TZONE_EVENING;
-    else                         return TZONE_NIGHT;
+
+    // 時間帯毎にIDを返すことで、「重み付けテーブル」の行を指定
+    if      (h >= 6  && h < 9 ) return TZONE_MORNING;       // 6時~9時:
+    else if (h >= 9  && h < 12) return TZONE_WORK;          // 9時~12時:
+    else if (h >= 12 && h < 15) return TZONE_AFTERLUNCH;    // 12時~15時:
+    else if (h >= 15 && h < 18) return TZONE_AFTERNOON;     // 15時~18時: 
+    else if (h >= 18 && h < 22) return TZONE_EVENING;       // 18時~22時:
+    else                         return TZONE_NIGHT;        // その他:
 }
 
+// 【重み付きランダム生成関数（抽選アルゴリズム）】
+// 確率テーブル（TIME_WEIGHS）を元に、どの感情にするか抽選
+// 全体の確率の合計（total）を計算し、その範囲内で乱数を発生させ、累積値（cum）の境界を超える場所を探すことで
+// 各感情に「35％」「50％」といった異なる当選確率を持たせる
 static EmotionType weightedRandom(const uint8_t *weights) {
     int total = 0;
-    for (int i = 0; i < EMOTION_COUNT; i++) total += weights[i];
-    if (total == 0) return EMOTION_NORMAL; 
 
+    // 1. 合計値を計算（例：合計100）
+    // EMOITON_COUNTより小さい場合を繰り返し、トータルを更新
+    for (int i = 0; i < EMOTION_COUNT; i++) total += weights[i];
+    if (total == 0) return EMOTION_NORMAL;  // もし、合計が0ならば、EMOTION_NOMALを返す
+
+    // 2. 0~合計値の範囲で乱数を生成
     int r = random(0, total), cum = 0;
+
+    // 3. 「くじ引き」の要領で、どこに当たったかを探す
     for (int i = 0; i < EMOTION_COUNT; i++) {
-        cum += weights[i];
-        if (r < cum) return (EmotionType)i;
+        cum += weights[i];                      // 累計で確率枠を増やしていく
+        if (r < cum) return (EmotionType)i;     // 当たった感情IDを返す
     }
     return EMOTION_NORMAL;
 }
 
+// ═══════════════════════════════════════════════════
+// TaskEmotion : 時間帯別・重み付きランダム感情変化
+// ═══════════════════════════════════════════════════
 void TaskEmotion(void *pvParameters) {
+
+    // 【タイムベース・アーキテクチャへのリファクタリング】
+    // 一つのタスク内で異なる時間軸（5秒、20秒、3~5分）のイベントを制御するための独立カウンタ
     uint16_t soundTick = 0;
     uint32_t screenWaitTicks = 0;
     uint32_t targetScreenWait = 0;
 
+    // 最初に「最初の表情が変わるまでの時間（3~5分）」をランダムに決定
     targetScreenWait = pdMS_TO_TICKS(180000) + (uint32_t)random(0, (long)pdMS_TO_TICKS(120000));
+
+    // ── [追加] ループ開始前に現在の感情の初期値を決めておく（音の連動用） ──
     EmotionType currentEmotion = EMOTION_NORMAL;
 
     for (;;) {
+
+        // 【最重要】5秒ごとにタスクをスリープから復帰させ、内部カウンタをインクリメント（加算）
         vTaskDelay(pdMS_TO_TICKS(5000));
+
+
+        // =================================================================
+        // 処理A：【ランダムなサウンド処理】（5秒おきにカウントして20秒毎に判定）
+        // =================================================================
         soundTick++;
-        if (soundTick >= 4) { 
+        if (soundTick >= 4) {   // 5秒 × 4 = 20秒ごとに実行
             soundTick = 0;
+
+            // 35%の確率で、現在の感情にあった声をランダムに鳴らす
             if (random(100) < 35) {
                 SoundEvent event;
                 event.isClick = false;   
-                event.emotion = currentEmotion; 
+                event.emotion = currentEmotion; // 表示中の感情をセット
+
                 xQueueSend(xSoundQueue, &event, 0);
                 Serial.print(F("[EMOTION-SOUND] Match Sound Triggered! ID="));
                 Serial.println((int)currentEmotion);
             }
         }
 
-        screenWaitTicks += pdMS_TO_TICKS(5000);
+        // =================================================================
+        // 処理B：【ゆったり表情切り替え処理】（3分〜5分のカウントアップ方式）
+        // =================================================================
+        screenWaitTicks += pdMS_TO_TICKS(5000);     // 経過時間を5秒分カウントを進める
+
         if (screenWaitTicks >= targetScreenWait) {
-            screenWaitTicks = 0;
+            screenWaitTicks = 0;    // カウンタをリセット
+            // 次の待機時間（3~5分）を再計算して仕込む
             targetScreenWait = pdMS_TO_TICKS(180000) + (uint32_t)random(0, (long)pdMS_TO_TICKS(120000));
 
+            // ── RTC現在時刻を取得 ────────────────────────
             RTCTime nowTime;
             RTC.getTime(nowTime);
+
             bool isTimeValid = (WiFi.status() == WL_CONNECTED) && (nowTime.getYear() >= 2024);
+
+            // ── 感情の決定用変数 ──────────────────────────────────
             EmotionType e = EMOTION_COUNT;
 
+            // ── RTC時刻同期が取れている場合のイベント感情の判定 ───────────
             if (isTimeValid) {
                 uint8_t hour   = nowTime.getHour();
                 uint8_t minute = nowTime.getMinutes();
+
                 if (hour >= 22 || hour < 7)         e = EMOTION_SLEEPING;
                 else if (hour == 7  && minute < 15) e = EMOTION_HAPPY;
                 else if (hour == 9  && minute < 15) e = EMOTION_EATING;
@@ -629,9 +736,11 @@ void TaskEmotion(void *pvParameters) {
                 else if (hour == 21)                e = EMOTION_SLEEPY;
             }
 
+            // ── イベント時間外の場合は重み付きランダム抽選 ────
             if (e == EMOTION_COUNT) {
                 RobotTimeZone tz = getCurrentTimeZone();
                 e = weightedRandom(TIME_WEIGHTS[tz]);
+
                 if (!isTimeValid) {
                     Serial.print(F("[EMOTION] NTP Not Ready -> Random Active -> "));
                 } else {
@@ -641,10 +750,15 @@ void TaskEmotion(void *pvParameters) {
                 Serial.print(F("[EMOTION] RTC Event Triggered -> "));
             }
 
+            // 新しく決まった感情を「現在の感情」として記憶（グローバルとタスク内のローカル双方へ蓄積）
             currentEmotion = e;
+
+            // 3. 感情決定 → 画面タスクへ通知（手が検知されていなければ表情更新キューを送る）
             if (!isHandDetected) {
                 xQueueSend(xEmotionQueue, &e, 0);
             } else {
+
+                // 手を検知している間は「SMILE」画面を維持する
                 Serial.print(F("[EMOTION] Screen skip (Hand detected) -> "));
             }
 
@@ -656,24 +770,42 @@ void TaskEmotion(void *pvParameters) {
     }
 }
 
+// ═══════════════════════════════════════════════════
+// TaskSound : 感情キューを受け取り、鳴き声を再生
+// ═══════════════════════════════════════════════════
 void TaskSound(void *pvParameters) {
+
     SoundEvent event;
+
+    // 無限ループ
     for (;;) {
+
+        // portMAX_DELAY: データが来るまで無限待機（スリープ）
+        // キューにデータが届くまで、ここで完全に待機（CPUを他のタスクに譲る、CPU使用率0％）
         if (xQueueReceive(xSoundQueue, &event, portMAX_DELAY) == pdTRUE) {
+
+            // ★シリアルモニター確認用のログ
             Serial.print(F("[SOUND TASK] Received event! isClick="));
             Serial.print(event.isClick);
             Serial.print(F(", Emotion ID="));
             Serial.println((int)event.emotion);
             
+            // ── 超音波センサー反応による音再生のフラグ同期 ──
+            // 超音波センサーによる笑顔（EMOTION_SMILE）の音が始まる瞬間フラグをONにする
+            // ※isSensorReacting は TaskButton で既にセットされているが、コンテキストスイッチの隙間を埋めるため念のため
             if (!event.isClick && event.emotion == EMOTION_SMILE) {
                 isSensorReacting = true;
             }
 
+            // ...再生処理...
             if (event.isClick) {
-                playSwitchSound();
+                playSwitchSound();      // ボタン操作音（ピッ）
             } else {
-                playCry(event.emotion);
+                playCry(event.emotion); // 感情に合わせたメロディを再生
             }
+
+            // 音が鳴り終わったら音の排他ロックだけ解除
+            // ※ isHandDetected は触らない → 手がある間はSMILE表情が継続される
             isSensorReacting = false;
         }
     } 

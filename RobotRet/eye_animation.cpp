@@ -20,60 +20,72 @@
 #include "eye_draw.h"
 #include "eye_state.h"
 
+// 外部（状態管理用タスク）から流れてくる涙の物理シミュレーション変数
 // eye_state.cpp が管理する涙情報（extern参照）
 extern float g_tearOffset;
 extern bool  g_showTear;
 
-// ── 追加する初期化関数 ──────────────────────────────
+// ── する初期化関数 ──────────────────────────────
 void eyeInit(Adafruit_SSD1306 &dsp) {
+
+
     // 依存している eye_state.cpp 側の初期化関数を内部で呼び出す
-    // （もし eyeStateInit の引数が異なる、または不要なら環境に合わせて調整してください）
     eyeStateInit(); 
     
     Serial.println(F("[EYE] eyeInit completed."));
 }
 
 // ══════════════════════════════════════════════════
-// メイン更新関数
+// 更新処理（eyeUpdate）: 表情エンジンのメインループ
+//                      15fps程度で実行
 // ══════════════════════════════════════════════════
 void eyeUpdate(Adafruit_SSD1306 &dsp, EmotionType emotion) {
+    
+    // 現在のシステム時刻を取得（アニメーションの滑らかさの基準になる）
     unsigned long now   = millis();
+    // 口パクなどを交互に切り替えるためのフレームワークインデックス
     int           frame = (int)((now / 500) % 2);
 
-    // 状態更新（まばたき・視線・感情遷移）
+    // 状態更新（まばたき・視線・感情遷移）：現在の感情に基づき、まぶたの開き具合や視線（gaze）を計算
+    // ここで計算された値が描画レイヤーの引数になる
     float  blinkLid, lidCut, gazeScale;
     int8_t gazeX, gazeY;
     eyeStateUpdate(emotion, now, blinkLid, lidCut, gazeX, gazeY, gazeScale);
 
-    // 描画開始
+    // 描画バッファのクリア（前のフレームの残像を消去）
     dsp.clearDisplay();
 
-    // 左右の目
+    // ── 目（レイヤー1） ───
+    // 左右の目を個別に計算・描画。視線の位置を gazeScale で伸縮・反映させる
+    // 左目（isLeft=true）
     drawOneEye(dsp,
                EYE_L_CENTER_X, EYE_CENTER_Y, EYE_RADIUS_X,
                (int8_t)(gazeX * gazeScale), (int8_t)(gazeY * gazeScale),
                blinkLid, lidCut,
                true, emotion);
 
+    // 右目（isLeft=false）
     drawOneEye(dsp,
                EYE_R_CENTER_X, EYE_CENTER_Y, EYE_RADIUS_X,
                (int8_t)(gazeX * gazeScale), (int8_t)(gazeY * gazeScale),
                blinkLid, lidCut,
                false, emotion);
 
+    // ── 特殊演出（レイヤー2） ──
+    // スマホからエサやり要求時、ハートをアニメーション表示
     if (emotion == EMOTION_FEAST) {
         drawFloatingHearts(dsp, frame);
     }
 
-    // 感情エフェクト
+    // ── 感情エフェクト・ほっぺ（レイヤー3） ──
     if (g_showTear) {
-        // 涙（SAD時）
-        // 目の下端（EYE_CENTER_Y + EYE_RADIUS_Y）からスタートさせる
-        // 目の半径分（EYE_RADIUS_Y）足すことで、目の中心から下のラインに移動します
+        // [涙の描画（SAD時）]: 目の中心Y(EYE_CENTER_Y) + 半径X(EYE_RADIUS_Y) = 下辺
+        // 目の半径分（EYE_RADIUS_Y）足すことで、目の中心から下のラインに移動
         int tearBaseY = EYE_CENTER_Y + EYE_RADIUS_X; 
         int ty = tearBaseY + (int)g_tearOffset;
 
         // 描画位置を微調整（もし左右がズレているならここの値を調整）
+        // 左右の目の外側に小さな涙を描画
         dsp.fillCircle(EYE_L_CENTER_X - 8, ty, 1, WHITE);
         dsp.fillCircle(EYE_R_CENTER_X + 8, ty, 1, WHITE);
         
@@ -89,11 +101,13 @@ void eyeUpdate(Adafruit_SSD1306 &dsp, EmotionType emotion) {
         drawCheek(dsp, EYE_R_CENTER_X, EYE_CENTER_Y, EYE_RADIUS_X);
     }
 
-    // 顔パーツ
+    // ── 顔パーツ（レイヤー4） ──
+    // 鼻と口は感情によって形状が動的に変化する(eye_draw.cppで定義)
     drawNose(dsp);
     drawMouth(dsp, emotion, frame);
 
-    // 時間帯・状態アイテム
+    // ── 小物アイテム（レイヤー5） ──
+    // 感情に応じた装飾パーツ（食べ物、タオル、お布団のZzzなど）を追加描画
     switch (emotion) {
         case EMOTION_EATING:  drawFoodItem(dsp, frame);              break;
         case EMOTION_SNACK:   drawSnackItem(dsp, frame);             break;
@@ -103,5 +117,6 @@ void eyeUpdate(Adafruit_SSD1306 &dsp, EmotionType emotion) {
         default:                                                     break;
     }
 
+    // バッファの内容を最後に一括で画面に転送（チラつき防止）
     dsp.display();
 }
