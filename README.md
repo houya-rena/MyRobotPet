@@ -108,6 +108,11 @@ https://github.com/user-attachments/assets/7c8e102e-eec4-47ef-b139-debde84b7327
 | ピン | 操作 | 動作 |
 |---|---|---|
 | D4 | 短押し | 時刻表示（`MODE_CLOCK`）へ切替。再押しまたは5秒で復帰 |
+
+<img width="1333" height="2000" alt="3" src="https://github.com/user-attachments/assets/3bb11551-562a-44d0-b402-6d22bb290ff4" />
+<img width="1333" height="2000" alt="2" src="https://github.com/user-attachments/assets/bd788b33-320f-43c4-934c-310a6c96f0d5" />
+<img width="1333" height="2000" alt="1" src="https://github.com/user-attachments/assets/7ed15839-5acc-4d0c-8b81-62e3c3cbdbaa" />
+
  
 ## クイックスタート
 
