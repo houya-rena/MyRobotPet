@@ -278,6 +278,26 @@ board_upload.use_1200bps_touch = yes
  
 > **注:** `TaskNTP` は `TaskWifiSync` に統合されており、`TaskInitAndLaunch` からは呼び出しません。
 
+## フローチャート
+
+### ① 起動シーケンス
+
+<img width="2720" height="2480" alt="フローチャート" src="https://github.com/user-attachments/assets/2703693f-b267-4001-8591-44b5014c81c6" />
+
+`setup()` → キュー生成 → 2タスク起動 → ISR登録 → スケジューラー開始。`TaskInitAndLaunch` は残り4タスクを生成後に `vTaskDelete()` で自滅してメモリを解放、`TaskWifiSync` はWebサーバーとして常駐に切り替わる
+
+### ② タスク間通信の全体構造
+
+<img width="2720" height="2240" alt="フローチャート2" src="https://github.com/user-attachments/assets/ce440fe9-a93d-4bbf-8d51-e680b9b0883f" />
+
+6タスクが3本のFreeRTOSキュー（`xEmotionQueue` / `xModeQueue` / `xSoundQueue`）と3つの `volatile` フラグ（`isHandDetected` / `isSensorReacting` / `currentBaseEmotion`）で連携する全体像。実線がキュー経由の送受信、破線がグローバルフラグ参照を表している
+
+###  ③ 各タスクの詳細フロー
+
+<img width="2720" height="5304" alt="フローチャート3" src="https://github.com/user-attachments/assets/5e34900e-45e8-4466-884d-d3b0013558ca" />
+
+`TaskDisplay`（66ms描画ループ・タイムアウト自動復帰・FEASTロック）、`TaskEmotion`（5秒周期の2段タイマー＝20秒サウンド判定 + 3〜5分表情変化＋RTC時刻イベント分岐）、`TaskSound`（`portMAX_DELAY` で完全スリープ待機）の内部ループを図示している
+
 ## メモリ管理状況
 
 - システム安定化のため、ヒープ領域を以下の通り設定・管理しています。
