@@ -108,6 +108,13 @@ https://github.com/user-attachments/assets/7c8e102e-eec4-47ef-b139-debde84b7327
 | ピン | 操作 | 動作 |
 |---|---|---|
 | D4 | 短押し | 時刻表示（`MODE_CLOCK`）へ切替。再押しまたは5秒で復帰 |
+
+## OLED表示画像
+
+<img width="1333" height="2000" alt="3" src="https://github.com/user-attachments/assets/3bb11551-562a-44d0-b402-6d22bb290ff4" />
+<img width="1333" height="2000" alt="2" src="https://github.com/user-attachments/assets/bd788b33-320f-43c4-934c-310a6c96f0d5" />
+<img width="1333" height="2000" alt="1" src="https://github.com/user-attachments/assets/7ed15839-5acc-4d0c-8b81-62e3c3cbdbaa" />
+
  
 ## クイックスタート
 
@@ -270,6 +277,26 @@ board_upload.use_1200bps_touch = yes
 | `TaskWifiSync` | 1 | — | NTP 時刻同期（起動時 + 1時間ごと） |
  
 > **注:** `TaskNTP` は `TaskWifiSync` に統合されており、`TaskInitAndLaunch` からは呼び出しません。
+
+## フローチャート
+
+### ① 起動シーケンス
+
+<img width="2720" height="2480" alt="フローチャート" src="https://github.com/user-attachments/assets/2703693f-b267-4001-8591-44b5014c81c6" />
+
+`setup()` → キュー生成 → 2タスク起動 → ISR登録 → スケジューラー開始。`TaskInitAndLaunch` は残り4タスクを生成後に `vTaskDelete()` で自滅してメモリを解放、`TaskWifiSync` はWebサーバーとして常駐に切り替わる
+
+### ② タスク間通信の全体構造
+
+<img width="2720" height="2240" alt="フローチャート2" src="https://github.com/user-attachments/assets/ce440fe9-a93d-4bbf-8d51-e680b9b0883f" />
+
+6タスクが3本のFreeRTOSキュー（`xEmotionQueue` / `xModeQueue` / `xSoundQueue`）と3つの `volatile` フラグ（`isHandDetected` / `isSensorReacting` / `currentBaseEmotion`）で連携する全体像。実線がキュー経由の送受信、破線がグローバルフラグ参照を表している
+
+###  ③ 各タスクの詳細フロー
+
+<img width="2720" height="5304" alt="フローチャート3" src="https://github.com/user-attachments/assets/5e34900e-45e8-4466-884d-d3b0013558ca" />
+
+`TaskDisplay`（66ms描画ループ・タイムアウト自動復帰・FEASTロック）、`TaskEmotion`（5秒周期の2段タイマー＝20秒サウンド判定 + 3〜5分表情変化＋RTC時刻イベント分岐）、`TaskSound`（`portMAX_DELAY` で完全スリープ待機）の内部ループを図示している
 
 ## メモリ管理状況
 
