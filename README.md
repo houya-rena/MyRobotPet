@@ -35,6 +35,11 @@ https://github.com/user-attachments/assets/a2aa4552-e183-4d18-84ef-1096909a739d
 - **Glassmorphism Webサーバー**: `PROGMEM` を活用し、スマホからアクセス可能な「すりガラス風デザイン」の遠隔操作パネルを実装。
 - **動的メモリ防衛**: `vTaskDelete` によるタスク解放と、ヒープ領域の余裕ある確保（0x2E00）によるBKPTエラーの根絶。
 
+### 【仕様変更の経緯：Weather APIから遠隔制御へのシフト】
+
+- 当初計画していた「Weather APIによる天気連動機能」は、通信オブジェクトとJsonバッファの増大によりヒープ領域が枯渇し、システム保護機能（BKPTエラー）が発生したため実装を見送った
+- 代替案として、外部API通信に比べてメモリ負荷が極めて低い「ローカルWebサーバー常駐タスク」を実装。**Webブラウザから非同期でインタラクションが可能な『遠隔エサやり機能』** へと仕様を変更し、限られたSRAM（32KB）のなかでIoT機能とマルチタスクの安定動作を両立させた
+
 - 遠隔エサやり画面
 <img width="1206" height="2427" alt="IMG_0011" src="https://github.com/user-attachments/assets/900ce412-5797-40e2-b7d1-7a01880c9635" />
 
@@ -49,7 +54,6 @@ https://github.com/user-attachments/assets/7c8e102e-eec4-47ef-b139-debde84b7327
 ## 回路図
 
 <img width="879" height="591" alt="スクリーンショット 2026-06-25 15 35 54" src="https://github.com/user-attachments/assets/4247ec28-a2e0-467e-987a-c237de24c126" />
-
 
 ## 配線
  
