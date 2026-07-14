@@ -355,9 +355,20 @@ board_upload.use_1200bps_touch = yes
 
 - **超音波センサーの検知特性**: センサー（HC-SR04）の物理的特性上、手をかざす角度が斜めである場合や、表面が柔らかい素材（服の袖など）の場合、超音波が乱反射・吸収されて検知が一瞬途切れることがあります。
 
-## [完成イメージフォルダまとめ-初期画面などもあり](https://github.com/houya-rena/MyRobotPet/tree/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8)
+## 完成イメージ
 
-- [完成イメージ動画](https://github.com/houya-rena/MyRobotPet/blob/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8/%E5%AE%9F%E9%9A%9B%E3%81%AE%E5%8B%95%E4%BD%9C%E5%8B%95%E7%94%BB.md)
+## 音声・対応する表情
+
+https://github.com/user-attachments/assets/daa9d8ec-1cbc-41ac-8aee-c3b1827fe0ab
+
+## ロングバージョン
+
+https://github.com/user-attachments/assets/37ad4e2b-b1e6-4d96-8691-35379dcb5efc
+
+## 時計モードと切り替え
+
+https://github.com/user-attachments/assets/e26010a8-40a9-47af-b7bf-55a976f0ce3f
+
 - [時間帯別表情](https://github.com/houya-rena/MyRobotPet/blob/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8/%E6%99%82%E9%96%93%E5%B8%AF%E5%88%A5%E3%82%A4%E3%83%99%E3%83%B3%E3%83%88%E8%A1%A8%E6%83%85.md)
 - [通常の表情バリエーション](https://github.com/houya-rena/MyRobotPet/blob/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8/%E8%A1%A8%E6%83%85%E7%94%BB%E5%83%8F.md)
 
