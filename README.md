@@ -117,6 +117,15 @@ https://github.com/user-attachments/assets/7c8e102e-eec4-47ef-b139-debde84b7327
 
 ### [表情](https://github.com/houya-rena/MyRobotPet/blob/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8/%E8%A1%A8%E6%83%85%E7%94%BB%E5%83%8F.md)
 
+<img width="1333" height="2000" alt="2" src="https://github.com/user-attachments/assets/a1829e42-417e-425a-884a-8e3fa6dc218e" />
+
+### [時間別イベント表情](https://github.com/houya-rena/MyRobotPet/blob/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8/%E6%99%82%E9%96%93%E5%B8%AF%E5%88%A5%E3%82%A4%E3%83%99%E3%83%B3%E3%83%88%E8%A1%A8%E6%83%85.md)
+
+<img width="1333" height="2000" alt="1" src="https://github.com/user-attachments/assets/af0e4a2a-7a0b-437b-8d86-c01212d22320" />
+
+### [イベント別表情](https://github.com/houya-rena/MyRobotPet/blob/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8/%E3%82%A4%E3%83%99%E3%83%B3%E3%83%88%E8%A1%A8%E7%A4%BA%E7%94%BB%E5%83%8F.md)
+
+<img width="1333" height="2000" alt="3" src="https://github.com/user-attachments/assets/3d75718e-25f0-4a01-ae56-3e439d47b1c6" />
  
 ## クイックスタート
 
