@@ -41,7 +41,7 @@ https://github.com/user-attachments/assets/a2aa4552-e183-4d18-84ef-1096909a739d
 - 代替案として、外部API通信に比べてメモリ負荷が極めて低い「ローカルWebサーバー常駐タスク」を実装。**Webブラウザから非同期でインタラクションが可能な『遠隔エサやり機能』** へと仕様を変更し、限られたSRAM（32KB）のなかでIoT機能とマルチタスクの安定動作を両立させた
 
 - 遠隔エサやり画面
-<img width="1206" height="2427" alt="IMG_0011" src="https://github.com/user-attachments/assets/900ce412-5797-40e2-b7d1-7a01880c9635" />
+<img width="1203" height="723" alt="image" src="https://github.com/user-attachments/assets/a7aaf01e-24b4-48eb-be2c-c8e193da787c" />
 
 - エサやり直後
 
@@ -115,9 +115,7 @@ https://github.com/user-attachments/assets/7c8e102e-eec4-47ef-b139-debde84b7327
 
 ## OLED表示画像
 
-<img width="1333" height="2000" alt="3" src="https://github.com/user-attachments/assets/3bb11551-562a-44d0-b402-6d22bb290ff4" />
-<img width="1333" height="2000" alt="2" src="https://github.com/user-attachments/assets/bd788b33-320f-43c4-934c-310a6c96f0d5" />
-<img width="1333" height="2000" alt="1" src="https://github.com/user-attachments/assets/7ed15839-5acc-4d0c-8b81-62e3c3cbdbaa" />
+### [表情](https://github.com/houya-rena/MyRobotPet/blob/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8/%E8%A1%A8%E6%83%85%E7%94%BB%E5%83%8F.md)
 
  
 ## クイックスタート
