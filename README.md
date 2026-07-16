@@ -312,28 +312,29 @@ board_upload.use_1200bps_touch = yes
 
 <img width="2720" height="2480" alt="フローチャート" src="https://github.com/user-attachments/assets/2703693f-b267-4001-8591-44b5014c81c6" />
 
-`setup()` → キュー生成 → 2タスク起動 → ISR登録 → スケジューラー開始。`TaskInitAndLaunch` は残り4タスクを生成後に `vTaskDelete()` で自滅してメモリを解放、`TaskWifiSync` はWebサーバーとして常駐に切り替わる
+> `setup()` → キュー生成 → 2タスク起動 → ISR登録 → スケジューラー開始。`TaskInitAndLaunch` は残り4タスクを生成後に `vTaskDelete()` で自滅してメモリを解放、`TaskWifiSync` はWebサーバーとして常駐に切り替わる
 
 ### ② タスク間通信の全体構造
 
 <img width="2720" height="2240" alt="フローチャート2" src="https://github.com/user-attachments/assets/ce440fe9-a93d-4bbf-8d51-e680b9b0883f" />
 
-6タスクが3本のFreeRTOSキュー（`xEmotionQueue` / `xModeQueue` / `xSoundQueue`）と3つの `volatile` フラグ（`isHandDetected` / `isSensorReacting` / `currentBaseEmotion`）で連携する全体像。実線がキュー経由の送受信、破線がグローバルフラグ参照を表している
+> 6タスクが3本のFreeRTOSキュー（`xEmotionQueue` / `xModeQueue` / `xSoundQueue`）と3つの `volatile` フラグ（`isHandDetected` / `isSensorReacting` / `currentBaseEmotion`）で連携する全体像。実線がキュー経由の送受信、破線がグローバルフラグ参照を表している
 
 ###  ③ 各タスクの詳細フロー
 
 <img width="2720" height="5304" alt="フローチャート3" src="https://github.com/user-attachments/assets/5e34900e-45e8-4466-884d-d3b0013558ca" />
 
-`TaskDisplay`（66ms描画ループ・タイムアウト自動復帰・FEASTロック）、`TaskEmotion`（5秒周期の2段タイマー＝20秒サウンド判定 + 3〜5分表情変化＋RTC時刻イベント分岐）、`TaskSound`（`portMAX_DELAY` で完全スリープ待機）の内部ループを図示している
+> `TaskDisplay`（66ms描画ループ・タイムアウト自動復帰・FEASTロック）、`TaskEmotion`（5秒周期の2段タイマー＝20秒サウンド判定 + 3〜5分表情変化＋RTC時刻イベント分岐）、`TaskSound`（`portMAX_DELAY` で完全スリープ待機）の内部ループを図示している
 
 ## メモリ管理状況
 
 - システム安定化のため、ヒープ領域を以下の通り設定・管理しています。
 
-- **ヒープ設定値**: `0x2E00` (11,776バイト)
-- **最大許容値**: `0x2F80` (12,160バイト)
-- **安全バッファ**: `0x180` (384バイト)
-- **設計方針**: システム停止（BKPTエラー）を未然に防ぐため、あえて最大値ギリギリを使用せず、余裕を持たせる「防衛的運用」を採用。
+> **ヒープ設定値**: `0x2E00` (11,776バイト)
+> **最大許容値**: `0x2F80` (12,160バイト)
+> **安全バッファ**: `0x180` (384バイト)
+> 
+> **設計方針**: システム停止（BKPTエラー）を未然に防ぐため、あえて最大値ギリギリを使用せず、余裕を持たせる「防衛的運用」を採用。
 
 ## トラブルシューティング履歴
 
@@ -352,7 +353,7 @@ board_upload.use_1200bps_touch = yes
 
 ### ノイズ対策
 
-本プロジェクトでは、電子工作特有の「ノイズ（ジーーーという雑音）」や「動作の不安定さ」を排除するために、ハード・ソフト両面で以下の対策を実施しています。
+> 本プロジェクトでは、電子工作特有の「ノイズ（ジーーーという雑音）」や「動作の不安定さ」を排除するために、ハード・ソフト両面で以下の対策を実施しています。
 
 #### 1. ハードウェア対策（ノイズ発生源の抑制）
 
@@ -364,7 +365,7 @@ board_upload.use_1200bps_touch = yes
 
 #### 2. ソフトウェア対策（信号のクリーン化）
 
-プログラムの暴走による不快音や、DAC出力のノイズを完全にシャットアウトします。
+> プログラムの暴走による不快音や、DAC出力のノイズを完全にシャットアウトします。
 
 - **ピンの完全シャットダウン（ハイ・インピーダンス化）**:
   - 無音時にはオーディオピン（A0）を単に `LOW` 出力にするだけでなく、ピンモード自体を強制的に `INPUT`（入力モード）へ切り替えています。
