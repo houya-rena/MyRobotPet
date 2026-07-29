@@ -14,12 +14,25 @@
 
 https://github.com/user-attachments/assets/a2aa4552-e183-4d18-84ef-1096909a739d
 
+## 着想とデザインコンセプト（表現の制約を付加価値に変える）
+
+本プロジェクトは、単に高機能なシステムを作るだけでなく、「限られたハードウェア資源の中で、いかに人間が愛着を抱くインターフェースを構築できるか」という情緒的価値の最大化に挑戦しました。
+
+- **LOVOTや配膳ロボットからの着想**:
+  >言葉を話さないロボティクスが、仕草や佇まいだけで人と共生し愛着を生むメカニズムに着目。本プロダクトも「非言語的なアプローチ」によるインタラクションを主軸としました。
+  >
+- **ドット絵による記号的ビジュアル（たまごっちのオマージュ）**:
+  >小型OLEDディスプレイの解像度と描画速度の物理的限界を逆手に取り、往年の『たまごっち』のような低解像度ドット絵の記号的表現をベンチマークとして採用。限られたピクセル数で感情を直感的に伝える瞳のモーフィングアニメーションを計算・設計しました。
+  >
+- **ノスタルジック・サウンド（初期ポケモン・たまごっちのオマージュ）**:
+  >初期の『ポケットモンスター』や『たまごっち』を想起させる、どこか懐かしく温かみのある電子音（8bit風サウンド）を目指しました。単に周波数を鳴らすだけでなく、パルスのデューティ比やミリ秒単位の音の切れ目（ゲートタイム）をチューニングし、無機質な機械音を「生き物の鳴き声」へと昇華させました。
+  >
 
 ## 使用技術・環境
  
 | 分野 | 技術 / ツール |
 |---|---|
-| **ハードウェア** | Arduino UNO R4 WiFi（RA4M1）, SSD1306 OLED, プッシュボタン, 超音波センサー HC-SR04, 圧電ブザー / スピーカー |
+| **ハードウェア** | Arduino UNO R4 WiFi（RA4M1）, SSD1306 OLED, プッシュボタン, 超音波センサー HC-SR04, オーディオモジュール / スピーカー |
 | **OS / Middleware** | FreeRTOS, WiFiS3, ArduinoJson |
 | **開発環境** | Arduino IDE（PlatformIO への移行も可能） |
 | **管理** | Git / GitHub / Sourcetree |
@@ -30,13 +43,19 @@ https://github.com/user-attachments/assets/a2aa4552-e183-4d18-84ef-1096909a739d
 - **FreeRTOS によるマルチタスク**: 描画（高優先度）・UI監視・通信・音響を分離し、堅牢な動作を実現。
 - **数式によるモーフィング描画**: ビットマップを使わず幾何学関数で描画し、SRAM を節約。
 - **非同期状態遷移**: `delay()` を排除し、`millis()` ベースの感情管理による生命感の演出。
+- **12bit ハードウェアDAC（A0ピン）× オーディオアンプによるクリアな高音質化**:Arduino UNO R4 WiFi（RA4M1）にのみ搭載されている**本物のアナログ出力（D/Aコンバータ）** ポート（A0）をオーディオ出力に採用。一般的なデジタルピンによるPWM（疑似アナログ）出力とは異なり、キャリアノイズ（高周波スイッチングノイズ）を排出した、クリアで歪みのないオマージュサウンドをオーディオアンプモジュール経由で安定して再生。
 - **外部割り込みによる超音波センサー**: Echo ピンの立ち上がり/立ち下がりを割り込みで計測し、メインタスクをブロックしない設計。
 - **2フラグによる状態分離**: 「手の検知状態（`isHandDetected`）」と「音再生の排他ロック（`isSensorReacting`）」を分離し、センサー反応中も正確に手の離脱を検知可能。
 - **Glassmorphism Webサーバー**: `PROGMEM` を活用し、スマホからアクセス可能な「すりガラス風デザイン」の遠隔操作パネルを実装。
 - **動的メモリ防衛**: `vTaskDelete` によるタスク解放と、ヒープ領域の余裕ある確保（0x2E00）によるBKPTエラーの根絶。
 
+### 【仕様変更の経緯：Weather APIから遠隔制御へのシフト】
+
+- 当初計画していた「Weather APIによる天気連動機能」は、通信オブジェクトとJsonバッファの増大によりヒープ領域が枯渇し、システム保護機能（BKPTエラー）が発生したため実装を見送った
+- 代替案として、外部API通信に比べてメモリ負荷が極めて低い「ローカルWebサーバー常駐タスク」を実装。**Webブラウザから非同期でインタラクションが可能な『遠隔エサやり機能』** へと仕様を変更し、限られたSRAM（32KB）のなかでIoT機能とマルチタスクの安定動作を両立させた
+
 - 遠隔エサやり画面
-<img width="1206" height="2427" alt="IMG_0011" src="https://github.com/user-attachments/assets/900ce412-5797-40e2-b7d1-7a01880c9635" />
+<img width="1203" height="723" alt="image" src="https://github.com/user-attachments/assets/a7aaf01e-24b4-48eb-be2c-c8e193da787c" />
 
 - エサやり直後
 
@@ -50,7 +69,6 @@ https://github.com/user-attachments/assets/7c8e102e-eec4-47ef-b139-debde84b7327
 
 <img width="879" height="591" alt="スクリーンショット 2026-06-25 15 35 54" src="https://github.com/user-attachments/assets/4247ec28-a2e0-467e-987a-c237de24c126" />
 
-
 ## 配線
  
 | デバイス | ピン |
@@ -59,7 +77,7 @@ https://github.com/user-attachments/assets/7c8e102e-eec4-47ef-b139-debde84b7327
 | ボタン（時刻表示） | D4 → GND（INPUT_PULLUP） |
 | 超音波センサー Trig | D3 |
 | 超音波センサー Echo | D2（外部割り込み） |
-| 圧電ブザー / スピーカー | A0 |
+| オーディオモジュール / スピーカー | A0 |
 
  
 
@@ -111,10 +129,17 @@ https://github.com/user-attachments/assets/7c8e102e-eec4-47ef-b139-debde84b7327
 
 ## OLED表示画像
 
-<img width="1333" height="2000" alt="3" src="https://github.com/user-attachments/assets/3bb11551-562a-44d0-b402-6d22bb290ff4" />
-<img width="1333" height="2000" alt="2" src="https://github.com/user-attachments/assets/bd788b33-320f-43c4-934c-310a6c96f0d5" />
-<img width="1333" height="2000" alt="1" src="https://github.com/user-attachments/assets/7ed15839-5acc-4d0c-8b81-62e3c3cbdbaa" />
+### [表情](https://github.com/houya-rena/MyRobotPet/blob/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8/%E8%A1%A8%E6%83%85%E7%94%BB%E5%83%8F.md)
 
+<img width="1333" height="2000" alt="2" src="https://github.com/user-attachments/assets/a1829e42-417e-425a-884a-8e3fa6dc218e" />
+
+### [時間別イベント表情](https://github.com/houya-rena/MyRobotPet/blob/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8/%E6%99%82%E9%96%93%E5%B8%AF%E5%88%A5%E3%82%A4%E3%83%99%E3%83%B3%E3%83%88%E8%A1%A8%E6%83%85.md)
+
+<img width="1333" height="2000" alt="1" src="https://github.com/user-attachments/assets/af0e4a2a-7a0b-437b-8d86-c01212d22320" />
+
+### [イベント別表情](https://github.com/houya-rena/MyRobotPet/blob/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8/%E3%82%A4%E3%83%99%E3%83%B3%E3%83%88%E8%A1%A8%E7%A4%BA%E7%94%BB%E5%83%8F.md)
+
+<img width="1333" height="2000" alt="3" src="https://github.com/user-attachments/assets/3d75718e-25f0-4a01-ae56-3e439d47b1c6" />
  
 ## クイックスタート
 
@@ -139,7 +164,10 @@ Wi-Fi接続およびNTP時刻同期を行うため、環境に合わせた設定
 
 #endif
 ```
- 
+
+> [!WARNING]
+> **セキュリティに関する注意:** > `arduino_secrets.h` には自宅や社内のWi-FiのSSIDおよびパスワードといった機密情報が含まれるため、GitHub等の公開リポジトリにコミットしないよう、事前に `.gitignore` に登録して除外管理を行っています。
+> 
 ## フォルダ構成
 
 - 本プロジェクトは、Arduino IDE環境とPlatformIO環境の両方に対応可能です。
@@ -179,8 +207,8 @@ RobotPet/               # スケッチフォルダ（この名前のフォルダ
 
 Arduino IDEで開発を続ける場合は、「すべてのファイルを1つのフォルダ（スケッチフォルダ）に集める」のが基本です。
 
-1. 全てのファイルを一つのフォルダに集約してください。
-2. ヘッダーのインクルードは `#include "filename.h"` の形式で記述してください（フォルダ階層を含めない）
+> 1. 全てのファイルを一つのフォルダに集約してください。
+> 2. ヘッダーのインクルードは `#include "filename.h"` の形式で記述してください（フォルダ階層を含めない）
 
 ### 2. PlatformIO (VS Code)
 
@@ -217,7 +245,7 @@ Arduino IDEで開発を続ける場合は、「すべてのファイルを1つ�
 
 #### PlatformIO移行用：`platformio.ini` の作成
 
-PlatformIO版を作成する場合、プロジェクトルートに `platformio.ini` を作成し、以下を記述してください。これでメモリ設定やライブラリの依存関係が安定します。
+> PlatformIO版を作成する場合、プロジェクトルートに `platformio.ini` を作成し、以下を記述してください。これでメモリ設定やライブラリの依存関係が安定します。
 
 ```ini
 [env:uno_r4_wifi]
@@ -284,28 +312,29 @@ board_upload.use_1200bps_touch = yes
 
 <img width="2720" height="2480" alt="フローチャート" src="https://github.com/user-attachments/assets/2703693f-b267-4001-8591-44b5014c81c6" />
 
-`setup()` → キュー生成 → 2タスク起動 → ISR登録 → スケジューラー開始。`TaskInitAndLaunch` は残り4タスクを生成後に `vTaskDelete()` で自滅してメモリを解放、`TaskWifiSync` はWebサーバーとして常駐に切り替わる
+> `setup()` → キュー生成 → 2タスク起動 → ISR登録 → スケジューラー開始。`TaskInitAndLaunch` は残り4タスクを生成後に `vTaskDelete()` で自滅してメモリを解放、`TaskWifiSync` はWebサーバーとして常駐に切り替わる
 
 ### ② タスク間通信の全体構造
 
 <img width="2720" height="2240" alt="フローチャート2" src="https://github.com/user-attachments/assets/ce440fe9-a93d-4bbf-8d51-e680b9b0883f" />
 
-6タスクが3本のFreeRTOSキュー（`xEmotionQueue` / `xModeQueue` / `xSoundQueue`）と3つの `volatile` フラグ（`isHandDetected` / `isSensorReacting` / `currentBaseEmotion`）で連携する全体像。実線がキュー経由の送受信、破線がグローバルフラグ参照を表している
+> 6タスクが3本のFreeRTOSキュー（`xEmotionQueue` / `xModeQueue` / `xSoundQueue`）と3つの `volatile` フラグ（`isHandDetected` / `isSensorReacting` / `currentBaseEmotion`）で連携する全体像。実線がキュー経由の送受信、破線がグローバルフラグ参照を表している
 
 ###  ③ 各タスクの詳細フロー
 
 <img width="2720" height="5304" alt="フローチャート3" src="https://github.com/user-attachments/assets/5e34900e-45e8-4466-884d-d3b0013558ca" />
 
-`TaskDisplay`（66ms描画ループ・タイムアウト自動復帰・FEASTロック）、`TaskEmotion`（5秒周期の2段タイマー＝20秒サウンド判定 + 3〜5分表情変化＋RTC時刻イベント分岐）、`TaskSound`（`portMAX_DELAY` で完全スリープ待機）の内部ループを図示している
+> `TaskDisplay`（66ms描画ループ・タイムアウト自動復帰・FEASTロック）、`TaskEmotion`（5秒周期の2段タイマー＝20秒サウンド判定 + 3〜5分表情変化＋RTC時刻イベント分岐）、`TaskSound`（`portMAX_DELAY` で完全スリープ待機）の内部ループを図示している
 
 ## メモリ管理状況
 
 - システム安定化のため、ヒープ領域を以下の通り設定・管理しています。
 
-- **ヒープ設定値**: `0x2E00` (11,776バイト)
-- **最大許容値**: `0x2F80` (12,160バイト)
-- **安全バッファ**: `0x180` (384バイト)
-- **設計方針**: システム停止（BKPTエラー）を未然に防ぐため、あえて最大値ギリギリを使用せず、余裕を持たせる「防衛的運用」を採用。
+> - **ヒープ設定値**: `0x2E00` (11,776バイト)
+> - **最大許容値**: `0x2F80` (12,160バイト)
+> - **安全バッファ**: `0x180` (384バイト)
+> 
+> **設計方針**: システム停止（BKPTエラー）を未然に防ぐため、あえて最大値ギリギリを使用せず、余裕を持たせる「防衛的運用」を採用。
 
 ## トラブルシューティング履歴
 
@@ -324,7 +353,7 @@ board_upload.use_1200bps_touch = yes
 
 ### ノイズ対策
 
-本プロジェクトでは、電子工作特有の「ノイズ（ジーーーという雑音）」や「動作の不安定さ」を排除するために、ハード・ソフト両面で以下の対策を実施しています。
+> 本プロジェクトでは、電子工作特有の「ノイズ（ジーーーという雑音）」や「動作の不安定さ」を排除するために、ハード・ソフト両面で以下の対策を実施しています。
 
 #### 1. ハードウェア対策（ノイズ発生源の抑制）
 
@@ -336,9 +365,12 @@ board_upload.use_1200bps_touch = yes
 
 #### 2. ソフトウェア対策（信号のクリーン化）
 
-プログラムの暴走による不快音や、DAC出力のノイズを完全にシャットアウトします。
+> プログラムの暴走による不快音や、DAC出力のノイズを完全にシャットアウトします。
 
-- **ピンの完全シャットダウン**: 無音時にはオーディオピンを `INPUT` モードへ切り替えることで、待機時の不快な「ジーーー」というホワイトノイズを物理的に遮断しています。
+- **ピンの完全シャットダウン（ハイ・インピーダンス化）**:
+  - 無音時にはオーディオピン（A0）を単に `LOW` 出力にするだけでなく、ピンモード自体を強制的に `INPUT`（入力モード）へ切り替えています。
+  - 高性能なDACポートは、待機時に微小な浮遊電圧を拾いやすく、これがアンプモジュールで増幅されるとスピーカーから「ジーーー」という耳障りなホワイトノイズとなって漏れ出る弱点があります。非再生時にポート自体を物理的に切り離す（ハイ・インピーダンス化する）この防衛的コードにより、無音時の完全な静音性を実現しました。
+ - 高性能なDACポート（A0）は、待機時に微小な浮遊電圧を拾いやすく、これがスピーカーから「ジーーー」というホワイトノイズとなって漏れ出る弱点があります。非再生時にポート自体を物理的に切り離す（ハイ・インピーダンス化する）この防衛的コードにより、無音時の完全な静音性を実現しました。
 - **排他制御とクジ引き暴走の防止**: 感情抽選タイマーを「鉄壁の構造」で管理し、10〜25秒のインターバルを確実に守ることで、音が重なってバリバリというノイズが発生する現象を根絶しました。
 
 ### 遠隔操作サーバーの最適化
@@ -351,13 +383,24 @@ board_upload.use_1200bps_touch = yes
 
 - **NTP同期時の描画レイテンシ**: 1時間ごとのNTP時刻同期（`TaskWifiSync`）が走る瞬間、Wi-Fiモジュールの通信オーバーヘッドにより、一時的に画面描画（`TaskDisplay`）のフレームレートが低下し、アニメーションが一瞬カクつく場合があります。実用上の影響はないため許容しています。
 
-- **オーディオ出力の音量制限**: 本構成ではA0ピン（DAC）から圧電ブザー/スピーカーを直接駆動しているため、周囲が騒がしい環境では鳴き声が聞こえにくい場合があります。音量を大きくしたい場合は、外部にオーディオアンプモジュール（PAM8403など）を挟む必要があります。
+- **オーディオ出力の音量・音質限界**: 本構成ではオーディオアンプモジュールを搭載していますが、使用しているスピーカーの筐体サイズや出力制限（またはアンプモジュール側の半固定抵抗ボリューム設定）により、周囲が非常に騒がしい環境では聞き取りにくい場合があります。設置環境に合わせてアンプ側の出力ゲイン調整、またはより大口径なスピーカーへの換装が必要です。
 
 - **超音波センサーの検知特性**: センサー（HC-SR04）の物理的特性上、手をかざす角度が斜めである場合や、表面が柔らかい素材（服の袖など）の場合、超音波が乱反射・吸収されて検知が一瞬途切れることがあります。
 
-## [完成イメージフォルダまとめ-初期画面などもあり](https://github.com/houya-rena/MyRobotPet/tree/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8)
+## 完成イメージ
 
-- [完成イメージ動画](https://github.com/houya-rena/MyRobotPet/blob/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8/%E5%AE%9F%E9%9A%9B%E3%81%AE%E5%8B%95%E4%BD%9C%E5%8B%95%E7%94%BB.md)
+## 音声・対応する表情
+
+https://github.com/user-attachments/assets/daa9d8ec-1cbc-41ac-8aee-c3b1827fe0ab
+
+## ロングバージョン
+
+https://github.com/user-attachments/assets/37ad4e2b-b1e6-4d96-8691-35379dcb5efc
+
+## 時計モードと切り替え
+
+https://github.com/user-attachments/assets/e26010a8-40a9-47af-b7bf-55a976f0ce3f
+
 - [時間帯別表情](https://github.com/houya-rena/MyRobotPet/blob/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8/%E6%99%82%E9%96%93%E5%B8%AF%E5%88%A5%E3%82%A4%E3%83%99%E3%83%B3%E3%83%88%E8%A1%A8%E6%83%85.md)
 - [通常の表情バリエーション](https://github.com/houya-rena/MyRobotPet/blob/main/%E5%AE%8C%E6%88%90%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8/%E8%A1%A8%E6%83%85%E7%94%BB%E5%83%8F.md)
 
